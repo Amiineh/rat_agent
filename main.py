@@ -24,16 +24,22 @@ if FLAGS.agent == "priint":
     output_path = output_path + "priint/"
 
 
-def run_train(opt):
+def run_train(opts):
     from runs import train
-    train.run(opt)
+    for opt in opts:
+        train.run(opt)
+
+
+def find_id(opts):
+    from runs import find_id as find
+    return find.run(opts)
 
 
 switcher = {
     'train': run_train,
+    'find_id': find_id,
 }
 
 
 opts = experiments.get_experiments(output_path)
-for opt in opts:
-    switcher[FLAGS.run](opt)
+switcher[FLAGS.run](opts)
