@@ -1,9 +1,9 @@
 ''' import tensorflow as tf ! '''
 import os
 
-def Agent(data, opt):
+def Agent(data, opt, output_path):
 
-    id_path = opt.output_path + str(opt.id) + '/checkpoint.txt'
+    id_path = output_path + opt.output_path + '/checkpoint.txt'
     dirname = os.path.dirname(id_path)
     if not os.path.exists(dirname):
         os.makedirs(dirname)

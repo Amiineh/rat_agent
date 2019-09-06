@@ -5,6 +5,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--experiment_index', type=int, required=True)
 parser.add_argument('--agent', type=str, required=True)
 parser.add_argument('--host_filesystem', type=str, required=True)
 parser.add_argument('--run', type=str, required=True)
@@ -24,15 +25,20 @@ if FLAGS.agent == "priint":
     output_path = output_path + "priint/"
 
 
-def run_train(opts):
+def generate_experiments(output_path):
+    from runs import experiments as exp
+    exp.run(output_path, FLAGS.agent)
+
+
+def run_train(id):
     from runs import train
-    for opt in opts:
-        train.run(opt)
+    opt = experiments.get_experiment(output_path, id)
+    train.run(opt, output_path)
 
 
-def find_id(opts):
+def find_id(id):
     from runs import find_id as find
-    return find.run(opts)
+    return find.run(id)
 
 
 switcher = {
@@ -41,5 +47,5 @@ switcher = {
 }
 
 
-opts = experiments.get_experiments(output_path)
-switcher[FLAGS.run](opts)
+generate_experiments(output_path)
+switcher[FLAGS.run](FLAGS.experiment_index)

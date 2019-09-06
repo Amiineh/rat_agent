@@ -1,12 +1,24 @@
 import agents
 import os
+import json
 
-def run(opt):
-    if os.path.isfile(opt.output_path + str(opt.id) + 'info.json'):
-        print("Json file already exists.")
-        quit()
 
-    if opt.dnn.name == 'priint':
-        from agents.priint import train
+def run(opt, output_path):
+    if opt.agent == 'priint':
+        from agents.priint.train import run
+        global run
 
-    train.run(opt)
+    if opt.train_completed:
+        print("Experiment already trained in " + opt.agent + "/" + opt.output_path)
+        return
+
+    run(opt, output_path)
+    with open(output_path + 'train.json') as infile:
+        info = json.load(infile)
+
+    info[str(opt.id)]['train_completed'] = True
+
+    print(info)
+    with open(output_path + 'train.json', 'w') as outfile:
+        json.dump(info, outfile)
+
