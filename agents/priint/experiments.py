@@ -3,6 +3,12 @@ import json
 import os
 
 
+class Environment(object):
+
+    def __init__(self, name='water_maze'):
+        self.name = name
+
+
 class DNN(object):
 
     def __init__(self):
@@ -34,6 +40,7 @@ class Experiment(object):
 
         self.id = id
         self.agent = agent
+        # todo: add Environment instead of level
         self.level = level
         self.output_path = output_path
         self.train_completed = False
@@ -48,6 +55,7 @@ def exp_exists(opt, output_path):
         with open(info_path, 'r') as infile:
             trained = json.load(infile)
             for key in trained:
+                # todo: find a fancy way to do this
                 if trained[key]['agent'] == opt.agent and \
                         trained[key]['level'] == opt.level and \
                         trained[key]['dnn']['name'] == opt.dnn.name and \
@@ -124,6 +132,7 @@ def get_experiment(output_path, id):
         trained = json.load(infile)
     opt = trained[str(id)]
 
+    # todo: find a fancy way to do this
     exp = Experiment(opt['id'], opt['agent'], opt['level'], opt['output_path'])
     exp.dnn.name = opt['dnn']['layers']
     exp.dnn.pretrained = opt['dnn']['pretrained']

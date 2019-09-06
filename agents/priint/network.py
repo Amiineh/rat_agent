@@ -12,3 +12,4 @@ def Agent(data, opt, output_path):
         file.write("hello, I am an agent in training :) \nmy info is:")
         file.write("learning rate: " + str(opt.hyper.learning_rate))
         file.write("batch size: " + str(opt.hyper.batch_size))
+

@@ -25,7 +25,8 @@ if FLAGS.agent == "priint":
     output_path = output_path + "priint/"
 
 
-def generate_experiments(output_path):
+def generate_experiments(id):
+    # is is not used
     from runs import experiments as exp
     exp.run(output_path, FLAGS.agent)
 
@@ -44,8 +45,8 @@ def find_id(id):
 switcher = {
     'train': run_train,
     'find_id': find_id,
+    'generate_experiments': generate_experiments,
 }
 
 
-generate_experiments(output_path)
 switcher[FLAGS.run](FLAGS.experiment_index)
