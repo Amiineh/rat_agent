@@ -18,7 +18,6 @@ def run(opt, output_path):
 
     info[str(opt.id)]['train_completed'] = True
 
-    print(info)
     with open(output_path + 'train.json', 'w') as outfile:
         json.dump(info, outfile)
 
