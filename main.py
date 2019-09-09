@@ -24,6 +24,10 @@ if FLAGS.agent == "priint":
     from agents.priint import experiments
     output_path = output_path + "priint/"
 
+if FLAGS.agent == "random_gym":
+    from agents.random_gym import experiments
+    output_path = output_path + "random_gym/"
+
 
 def generate_experiments(id):
     # is is not used
