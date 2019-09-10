@@ -10,7 +10,7 @@ class Hyperparameters(object):
 
 class Experiment(object):
 
-    def __init__(self, id, env_id, output_path, train_completed=None):
+    def __init__(self, id, agent, env_id, output_path, train_completed=None):
         """
         :param id: index of output data folder
         :param agent: name of algorithm for agent (e.g. 'dqn', 'a3c')
@@ -18,6 +18,7 @@ class Experiment(object):
         """
 
         self.id = id
+        self.agent = agent
         self.env_id = env_id
         self.output_path = output_path
         if train_completed is None:
@@ -29,7 +30,7 @@ class Experiment(object):
 
 
 def decode_exp(dct):
-    return Experiment(dct['id'], dct['env_id'], dct['output_path'], dct['train_completed'])
+    return Experiment(dct['id'], dct['agent'], dct['env_id'], dct['output_path'], dct['train_completed'])
 
 
 def exp_exists(exp, info):
@@ -62,7 +63,7 @@ def generate_experiments(output_path):
         idx_base = 0
 
     for env in ['Breakout-v0']:
-        exp = Experiment(id=idx_base, env_id=env, output_path='train_' + str(idx_base))
+        exp = Experiment(id=idx_base, agent='random_gym', env_id=env, output_path='train_' + str(idx_base))
 
         idx = exp_exists(exp, info)
         if idx is not False:

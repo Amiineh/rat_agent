@@ -1,9 +1,7 @@
 import json
 
 
-def run(output_path, agent):
-    if agent == 'priint':
-        import agents.priint.experiments as experiments
+def run(output_path, experiments):
 
     experiments.generate_experiments(output_path)
 

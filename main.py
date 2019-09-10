@@ -20,25 +20,26 @@ output_path = {
     'om': '/om/user/amineh/rat_exp/'}[FLAGS.host_filesystem]
 
 if FLAGS.agent == "priint":
-    from agents import priint as agent
     from agents.priint import experiments
+    from agents.priint.train import run
     output_path = output_path + "priint/"
 
 if FLAGS.agent == "random_gym":
     from agents.random_gym import experiments
+    from agents.random_gym.train import run
     output_path = output_path + "random_gym/"
 
 
 def generate_experiments(id):
     # is is not used
     from runs import experiments as exp
-    exp.run(output_path, FLAGS.agent)
+    exp.run(output_path, experiments)
 
 
 def run_train(id):
     from runs import train
     opt = experiments.get_experiment(output_path, id)
-    train.run(opt, output_path)
+    train.run(opt, output_path, run)
 
 
 def find_id(id):
