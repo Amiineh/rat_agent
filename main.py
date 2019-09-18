@@ -11,9 +11,6 @@ parser.add_argument('--host_filesystem', type=str, required=True)
 parser.add_argument('--run', type=str, required=True)
 FLAGS = parser.parse_args()
 
-code_path = {
-    'amineh': '/Users/amineh.ahm/Desktop/Mice/code/rat_agent/',
-    'om': '/om/user/amineh/rat_agent/'}[FLAGS.host_filesystem]
 
 output_path = {
     'amineh': '/Users/amineh.ahm/Desktop/Mice/code/rat_exp/',
@@ -28,6 +25,11 @@ if FLAGS.agent == "random_gym":
     from agents.random_gym import experiments
     from agents.random_gym.train import run
     output_path = output_path + "random_gym/"
+
+if FLAGS.agent == "dqn_gym":
+    from agents.dqn_gym import experiments
+    from agents.dqn_gym.train import run
+    output_path = output_path + "dqn_gym/"
 
 
 def generate_experiments(id):

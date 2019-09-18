@@ -1,4 +1,4 @@
 from agents.priint.network import Agent
 
-def run(opt, output_path):
-    Agent(None, opt, output_path)
+def run(opt, id_path):
+    Agent(None, opt, id_path)

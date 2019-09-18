@@ -4,12 +4,7 @@ from gym import wrappers, logger
 from agents.random_gym.network import RandomAgent
 
 
-def run(opt, output_path):
-
-    id_path = output_path + opt.output_path
-    dirname = os.path.dirname(id_path)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
+def run(opt, id_path):
 
     logger.set_level(logger.INFO)
     env = gym.make(opt.env_id)
