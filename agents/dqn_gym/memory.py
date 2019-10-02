@@ -2,7 +2,7 @@ import numpy as np
 from collections import deque
 
 
-class Memory():
+class Memory:
     def __init__(self, max_size=1000):
         self.buffer = deque(maxlen=max_size)
 

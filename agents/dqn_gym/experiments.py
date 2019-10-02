@@ -16,10 +16,8 @@ class Hyperparameters(object):
         self.decay_rate = 0.002  # exponential decay rate for exploration prob
 
         # Network parameters
-        self.kernel_size_1 = [8, 8, 3]
-        self.output_filters_conv1 = 32
-        self.output_filters_conv2 = 64
-        self.output_filters_conv3 = 64
+        self.kernel_size = [8, 8, 3]
+        self.output_filters_conv = [32, 64, 64]
         self.hidden_size = 512  # number of units in each Q-network hidden layer
         self.learning_rate = 0.0001  # Q-network learning rate
 
@@ -36,7 +34,7 @@ class Environment(object):
 
     def __init__(self, name='Breakout-v0'):
         self.name = name
-        self.state_size = [80, 80, 3]
+        self.state_size = [84, 84, 4]  # image size
         self.action_size = 4
 
 
@@ -51,6 +49,7 @@ class Experiment(object):
 
         self.id = id
         self.agent = agent
+        self.env_id = env_id
         self.output_path = output_path
         if train_completed is None:
             self.train_completed = False
@@ -118,4 +117,3 @@ def get_experiment(output_path, id):
     opt = trained[str(id)]
     exp = decode_exp(opt)
     return exp
-
