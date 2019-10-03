@@ -1,22 +1,10 @@
 import numpy as np
-import time
 import random
 import tensorflow as tf
 import gym
 from gym import wrappers, logger
 from agents.dqn_gym.memory import Memory
 from agents.dqn_gym.network import QNetwork
-
-
-total_steps = 0
-total_step_time = 0
-mean_step_time = 0
-
-total_network_updates = 0
-total_network_update_time = 0
-mean_network_update_time = 0
-
-start_program = 0
 
 
 def update_target_variables(mainQN, targetQN, tau=1.0):
@@ -47,15 +35,7 @@ def env_step(env, action, num_repeats=4):
         # if not env.is_running():
         #     env.reset()
 
-        # Profile environment step
-        global total_steps, total_step_time, mean_step_time
-        start = time.clock()
         obs[t], reward, done, info = env.step(action)
-        step_time = time.clock() - start
-        total_step_time += step_time
-        total_steps += 1
-        mean_step_time = total_step_time / total_steps
-
         R += reward
 
         if done:
@@ -93,11 +73,8 @@ def pretrain(env, memory, opt):
 
 
 def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
-    # Now train with experiences
-    global start_program, total_network_update_time, total_network_updates, mean_network_update_time
-    start_program = time.clock()
+    global summary
     saver = tf.train.Saver()
-    rewards_list = []
     with tf.Session() as sess:
         # Initialize variables
         sess.run(tf.global_variables_initializer())
@@ -105,14 +82,6 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
 
         step = 0
         for ep in range(1, opt.hyper.train_episodes):
-
-            total_program_time = time.clock() - start_program
-            print("Mean step time: ", mean_step_time)
-            print("Mean network update time: ", mean_network_update_time)
-            print("Total step time: ", total_step_time)
-            print("Total network update time: ", total_network_update_time)
-            print("The rest of the program time: ", total_program_time - (total_step_time + total_network_update_time))
-
             total_reward = 0
             t = 0
             while t < opt.hyper.max_steps:
@@ -130,18 +99,10 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                     # Make a random action
                     action = get_random_action()
                 else:
-                    #  Add profiling
-                    start = time.clock()
-
                     # Get action from Q-network
                     feed = {mainQN.inputs_: state.reshape((1, state.shape[0], state.shape[1], state.shape[2]))}
                     Qs = sess.run(mainQN.output, feed_dict=feed)
                     action = np.argmax(Qs)
-
-                    network_update_time = time.clock() - start
-                    total_network_update_time += network_update_time
-                    total_network_updates += 1
-                    mean_network_update_time = total_network_update_time / total_network_updates
 
                 # Take action, get new state and reward
                 next_state, reward, done = env_step(env, action)
@@ -152,18 +113,17 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                     # the episode ends so no next state
                     next_state = np.zeros(state.shape)
                     t = opt.hyper.max_steps
-
-                    print('\nEpisode: {}'.format(ep),
-                          'Total reward: {}'.format(total_reward),
-                          # 'Training loss: {:.4f}'.format(loss),
-                          'Explore P: {:.4f}'.format(explore_p))
-                    rewards_list.append((ep, total_reward))
-
                     # Add experience to memory
                     memory.add((state, action, reward, next_state, done))
-
                     # Start new episode
                     env.reset()
+
+                    print('\nEpisode: {}'.format(ep),
+                          '\nTotal reward: {}'.format(total_reward),
+                          '\nExplore P: {:.4f}'.format(explore_p))
+
+                    tf.summary.scalar('reward', total_reward)
+                    tf.summary.scalar('explore_p', explore_p)
 
                 else:
                     # Add experience to memory
@@ -179,34 +139,19 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                 next_states = np.array([each[3] for each in batch])
                 dones = np.array([each[4] for each in batch])
 
-                # Train and profile network
-                start = time.clock()
-
                 target_Qs = sess.run(targetQN.output, feed_dict={targetQN.inputs_: next_states})
-
-                network_update_time = time.clock() - start
-                total_network_update_time += network_update_time
-                total_network_updates += 1
-                mean_network_update_time = total_network_update_time / total_network_updates
-
                 # Set target_Qs to 0 for states where episode ends
                 episode_ends = dones.all()
                 target_Qs[episode_ends] = 0
                 merge = tf.summary.merge_all()
-                start = time.clock()
 
-                loss, _, _ = sess.run([mainQN.loss, mainQN.train_op, merge],
-                                      feed_dict={mainQN.inputs_: states,
-                                                 mainQN.targetQs_: target_Qs,
-                                                 mainQN.reward: rewards,
-                                                 mainQN.action: actions})
+                loss, _, summary = sess.run([mainQN.loss, mainQN.train_op, merge],
+                                            feed_dict={mainQN.inputs_: states,
+                                                       mainQN.targetQs_: target_Qs,
+                                                       mainQN.reward: rewards,
+                                                       mainQN.action: actions})
 
-                network_update_time = time.clock() - start
-                total_network_update_time += network_update_time
-                total_network_updates += 1
-                mean_network_update_time = total_network_update_time / total_network_updates
-
-                # train_writer.add_summary(summary, t)
+            train_writer.add_summary(summary, ep)
 
             # print("Saving...")
             # saver.save(sess, '/mnt/hgfs/ryanprinster/lab/models/my_model', global_step=ep)
@@ -216,7 +161,6 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
 
 
 def run(opt, id_path):
-
     tf.reset_default_graph()
     memory = Memory(max_size=opt.hyper.memory_size)
     mainQN = QNetwork(name='main_qn', opt=opt)
@@ -229,13 +173,10 @@ def run(opt, id_path):
     env = gym.make(opt.env_id)
     env = wrappers.AtariPreprocessing(env)
     env._max_episode_steps = opt.hyper.max_steps
-    # todo: add video
-    # env = wrappers.Monitor(env, directory=id_path + '/video', force=True)
-
+    env = wrappers.Monitor(env, directory=id_path + '/video', force=True)
     env.reset()
 
     state = pretrain(env, memory, opt)
     train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path)
 
     env.monitor.close()
-
