@@ -4,30 +4,35 @@ import os
 
 class Hyperparameters(object):
 
-    def __init__(self):
+    def __init__(self, lr=0.0001):
         # General Parameters
-        self.max_steps = 5000
-        self.train_episodes = 500  # max number of episodes to learn from max_steps = 5000               # max steps in an episode
+        self.max_steps = 5000   # max steps in an episode
+        self.train_episodes = 10000  # max number of episodes
         self.gamma = 0.99  # future reward discount
 
         # Exploration parameters
         self.explore_start = 1.0  # exploration probability at start
-        self.explore_stop = 0.01  # minimum exploration probability
+        self.explore_stop = 0.1  # minimum exploration probability
         self.decay_rate = 0.002  # exponential decay rate for exploration prob
+        self.explore_test = 0.01  # exploration rate for test time
 
         # Network parameters
-        self.kernel_size = [8, 8, 3]
+        self.kernel_size = [8, 4, 3]
+        self.stride = [4, 2, 1]
         self.output_filters_conv = [32, 64, 64]
         self.hidden_size = 512  # number of units in each Q-network hidden layer
-        self.learning_rate = 0.0001  # Q-network learning rate
+        self.learning_rate = lr  # Q-network learning rate
 
         # Memory parameters
-        self.memory_size = 10000  # memory capacity
-        self.batch_size = 1  # experience mini-batch size
+        self.memory_size = 1000000  # memory capacity
+        self.batch_size = 32  # experience mini-batch size
         self.pretrain_length = self.batch_size  # number experiences to pretrain the memory
 
         # target QN
         self.update_target_every = 2000
+
+        # save
+        self.save_log = 1000
 
 
 class Environment(object):
@@ -40,7 +45,7 @@ class Environment(object):
 
 class Experiment(object):
 
-    def __init__(self, id, agent, env_id, output_path, train_completed=None):
+    def __init__(self, id, agent, env_id, output_path, train_completed=None, hyper=None):
         """
         :param id: index of output data folder
         :param agent: name of algorithm for agent (e.g. 'dqn', 'a3c')
@@ -56,7 +61,10 @@ class Experiment(object):
         else:
             self.train_completed = train_completed
 
-        self.hyper = Hyperparameters()
+        if hyper is None:
+            self.hyper = Hyperparameters()
+        else:
+            self.hyper = hyper
         self.env = Environment(env_id)
 
 
@@ -93,18 +101,20 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for env_id in ['Breakout-v0']:
-        exp = Experiment(id=idx_base, agent='dqn_gym', env_id=env_id, output_path='train_' + str(idx_base))
+    for lr in [0.1, 0.01, 0.001, 0.0001, 0.00001]:
+        for env_id in ['Breakout-v0']:
+            hyper = Hyperparameters(lr=lr)
+            exp = Experiment(id=idx_base, agent='dqn_gym', env_id=env_id, output_path='train_' + str(idx_base), hyper=hyper)
 
-        idx = exp_exists(exp, info)
-        if idx is not False:
-            print("exp already exists with id", idx)
-            continue
+            idx = exp_exists(exp, info)
+            if idx is not False:
+                print("exp already exists with id", idx)
+                continue
 
-        s = json.loads(json.dumps(exp, default=lambda o: o.__dict__))
-        print(s)
-        info[str(idx_base)] = s
-        idx_base += 1
+            s = json.loads(json.dumps(exp, default=lambda o: o.__dict__))
+            print(s)
+            info[str(idx_base)] = s
+            idx_base += 1
 
     with open(info_path, 'w') as outfile:
         json.dump(info, outfile)

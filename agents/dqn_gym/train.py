@@ -5,6 +5,26 @@ import gym
 from gym import wrappers, logger
 from agents.dqn_gym.memory import Memory
 from agents.dqn_gym.network import QNetwork
+from PIL import Image
+import sys
+import os
+
+
+def save_images(id_path, opt, sess, targetQN, env, episode):
+    state, reward, done = env_step(env, get_random_action())
+    for t in range(opt.hyper.max_steps):
+        action = eps_greedy(opt.hyper.explore_test, sess, targetQN, state)
+        next_state, reward, done = env_step(env, action)
+
+        if done:
+            return
+        else:
+            img = Image.fromarray(next_state, 'RGB')
+            img_path = os.path.join(id_path, 'images_' + str(episode))
+            if not os.path.exists(img_path):
+                os.mkdir(img_path)
+            img.save(img_path + '/action_' + str(t) + '.jpg', 'JPEG')
+            state = next_state
 
 
 def update_target_variables(mainQN, targetQN, tau=1.0):
@@ -13,6 +33,18 @@ def update_target_variables(mainQN, targetQN, tau=1.0):
     # assert len(q_vars) == len(q_target_vars)
     update_target_op = [v_t.assign(v_t * (1. - tau) + v * tau) for v_t, v in zip(q_target_vars, q_vars)]
     return update_target_op
+
+
+def eps_greedy(explore_p, sess, model, state):
+    if explore_p > np.random.rand():
+        # Make a random action
+        action = get_random_action()
+    else:
+        # Get action from Q-network
+        feed = {model.inputs_: state.reshape((1, state.shape[0], state.shape[1], state.shape[2]))}
+        Qs = sess.run(model.output, feed_dict=feed)
+        action = np.argmax(Qs)
+    return action
 
 
 def get_random_action():
@@ -95,14 +127,7 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                 # Explore or Exploit
                 explore_p = opt.hyper.explore_stop + \
                             (opt.hyper.explore_start - opt.hyper.explore_stop) * np.exp(-opt.hyper.decay_rate * step)
-                if explore_p > np.random.rand():
-                    # Make a random action
-                    action = get_random_action()
-                else:
-                    # Get action from Q-network
-                    feed = {mainQN.inputs_: state.reshape((1, state.shape[0], state.shape[1], state.shape[2]))}
-                    Qs = sess.run(mainQN.output, feed_dict=feed)
-                    action = np.argmax(Qs)
+                action = eps_greedy(explore_p, sess, mainQN, state)
 
                 # Take action, get new state and reward
                 next_state, reward, done = env_step(env, action)
@@ -153,11 +178,13 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
 
             train_writer.add_summary(summary, ep)
 
-            # print("Saving...")
-            # saver.save(sess, '/mnt/hgfs/ryanprinster/lab/models/my_model', global_step=ep)
+            if ep % opt.hyper.save_log == 0:
+                print("\nSaving graph...")
+                saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
+                # save_images(id_path, opt, sess, targetQN, env, ep)
 
-            # print("Resoring...")
-            # saver.restore(sess, tf.train.latest_checkpoint('/mnt/hgfs/ryanprinster/lab/models/'))
+                # print("Resoring...")
+                # saver.restore(sess, tf.train.latest_checkpoint('/mnt/hgfs/ryanprinster/lab/models/'))
 
 
 def run(opt, id_path):
@@ -173,7 +200,7 @@ def run(opt, id_path):
     env = gym.make(opt.env_id)
     env = wrappers.AtariPreprocessing(env)
     env._max_episode_steps = opt.hyper.max_steps
-    env = wrappers.Monitor(env, directory=id_path + '/video', force=True)
+    # env = wrappers.Monitor(env, directory=id_path + '/video', force=True)
     env.reset()
 
     state = pretrain(env, memory, opt)

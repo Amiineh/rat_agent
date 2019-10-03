@@ -10,10 +10,9 @@ class QNetwork:
             self.inputs_ = tf.placeholder(tf.float32,
                                           [None, opt.env.state_size[0], opt.env.state_size[1], opt.env.state_size[2]],
                                           name='inputs')
-            self.conv1 = tf.contrib.layers.conv2d(self.inputs_, opt.hyper.output_filters_conv[0], kernel_size=8,
-                                                  stride=4)
-            self.conv2 = tf.contrib.layers.conv2d(self.conv1, opt.hyper.output_filters_conv[1], kernel_size=4, stride=2)
-            self.conv3 = tf.contrib.layers.conv2d(self.conv2, opt.hyper.output_filters_conv[2], kernel_size=4, stride=1)
+            self.conv1 = tf.contrib.layers.conv2d(self.inputs_, opt.hyper.output_filters_conv[0], kernel_size=opt.hyper.kernel_size[0], stride=opt.hyper.stride[0])
+            self.conv2 = tf.contrib.layers.conv2d(self.conv1, opt.hyper.output_filters_conv[1], kernel_size=opt.hyper.kernel_size[1], stride=opt.hyper.stride[1])
+            self.conv3 = tf.contrib.layers.conv2d(self.conv2, opt.hyper.output_filters_conv[2], kernel_size=opt.hyper.kernel_size[2], stride=opt.hyper.stride[2])
 
             self.fc1 = tf.contrib.layers.fully_connected(
                 tf.reshape(self.conv3, [-1, self.conv3.shape[1] * self.conv3.shape[2] * self.conv3.shape[3]]),
@@ -32,7 +31,7 @@ class QNetwork:
 
         self.y = self.reward + opt.hyper.gamma * tf.reduce_max(self.targetQs_, axis=1)
         self.loss = tf.reduce_mean(tf.square(self.y - batched_index(self.output, self.action)))
-        self.train_op = tf.train.AdamOptimizer(opt.hyper.learning_rate).minimize(self.loss)
+        self.train_op = tf.train.RMSPropOptimizer(opt.hyper.learning_rate).minimize(self.loss)
 
         tf.summary.scalar('loss', self.loss)
 

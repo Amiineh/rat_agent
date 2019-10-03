@@ -3,7 +3,7 @@ from collections import deque
 
 
 class Memory:
-    def __init__(self, max_size=1000):
+    def __init__(self, max_size=1000000):
         self.buffer = deque(maxlen=max_size)
 
     def add(self, experience):
