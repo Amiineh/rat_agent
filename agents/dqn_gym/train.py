@@ -10,21 +10,28 @@ import sys
 import os
 
 
-def save_images(id_path, opt, sess, targetQN, env, episode):
-    state, reward, done = env_step(env, get_random_action())
+def save_images(id_path, opt, sess, targetQN, env, episode, save_steps=500):
+    rgb_env = gym.make(opt.env_id)
+    rgb_env.reset()
+    action = get_random_action()
     for t in range(opt.hyper.max_steps):
+        state, _, done = env_step(env, action)
         action = eps_greedy(opt.hyper.explore_test, sess, targetQN, state)
-        next_state, reward, done = env_step(env, action)
 
-        if done:
-            return
-        else:
-            img = Image.fromarray(next_state, 'RGB')
-            img_path = os.path.join(id_path, 'images_' + str(episode))
-            if not os.path.exists(img_path):
-                os.mkdir(img_path)
-            img.save(img_path + '/action_' + str(t) + '.jpg', 'JPEG')
-            state = next_state
+        for rep in range(4):
+            rgb_state, _, done_rgb, _ = rgb_env.step(action)
+
+            if done or done_rgb:
+                rgb_env.close()
+                return
+            else:
+                img = Image.fromarray(rgb_state, 'RGB')
+                img_path = os.path.join(id_path, 'images_' + str(episode))
+                if not os.path.exists(img_path):
+                    os.mkdir(img_path)
+                img.save(img_path + '/action_' + str(t) + '_' + str(rep) + '.jpg', 'JPEG')
+    rgb_env.close()
+    return
 
 
 def update_target_variables(mainQN, targetQN, tau=1.0):
@@ -105,12 +112,15 @@ def pretrain(env, memory, opt):
 
 
 def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
-    global summary
+    global summ
     saver = tf.train.Saver()
     with tf.Session() as sess:
         # Initialize variables
         sess.run(tf.global_variables_initializer())
         train_writer = tf.summary.FileWriter(id_path, sess.graph)
+        total_reward, explore_p = 0, 0
+        tf.summary.scalar('reward', total_reward)
+        tf.summary.scalar('explore_p', explore_p)
 
         step = 0
         for ep in range(1, opt.hyper.train_episodes):
@@ -147,9 +157,6 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                           '\nTotal reward: {}'.format(total_reward),
                           '\nExplore P: {:.4f}'.format(explore_p))
 
-                    tf.summary.scalar('reward', total_reward)
-                    tf.summary.scalar('explore_p', explore_p)
-
                 else:
                     # Add experience to memory
                     memory.add((state, action, reward, next_state, done))
@@ -170,15 +177,16 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                 target_Qs[episode_ends] = 0
                 merge = tf.summary.merge_all()
 
-                loss, _, summary = sess.run([mainQN.loss, mainQN.train_op, merge],
+                loss, _, summ = sess.run([mainQN.loss, mainQN.train_op, merge],
                                             feed_dict={mainQN.inputs_: states,
                                                        mainQN.targetQs_: target_Qs,
                                                        mainQN.reward: rewards,
                                                        mainQN.action: actions})
 
-                train_writer.add_summary(summary)
+            train_writer.add_summary(summ, ep)
 
-            if ep % opt.hyper.save_log == 0:
+            # if ep % opt.hyper.save_log == 0:
+            if ep % 1 == 0:
                 print("\nSaving graph...")
                 saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
                 # save_images(id_path, opt, sess, targetQN, env, ep)
