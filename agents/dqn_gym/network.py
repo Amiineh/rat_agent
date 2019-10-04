@@ -35,6 +35,9 @@ class QNetwork:
 
         tf.summary.scalar('loss', self.loss)
 
+        self.reward_summary = tf.placeholder(tf.float32, name='reward_summary')
+        tf.summary.scalar('reward', self.reward_summary)
+
 
 # from trfl:
 # https://github.com/deepmind/trfl/blob/master/trfl/indexing_ops.py

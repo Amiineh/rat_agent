@@ -1,4 +1,7 @@
 venv
 .DS_Store
 .idea
+agents/dqn_gym/__pycache__/*
+*.pyc
+
 

@@ -10,27 +10,44 @@ import sys
 import os
 
 
-def save_images(id_path, opt, sess, targetQN, env, episode, save_steps=500):
-    rgb_env = gym.make(opt.env_id)
-    rgb_env.reset()
-    action = get_random_action()
-    for t in range(opt.hyper.max_steps):
-        state, _, done = env_step(env, action)
-        action = eps_greedy(opt.hyper.explore_test, sess, targetQN, state)
-
-        for rep in range(4):
-            rgb_state, _, done_rgb, _ = rgb_env.step(action)
-
-            if done or done_rgb:
-                rgb_env.close()
-                return
-            else:
-                img = Image.fromarray(rgb_state, 'RGB')
-                img_path = os.path.join(id_path, 'images_' + str(episode))
-                if not os.path.exists(img_path):
-                    os.mkdir(img_path)
-                img.save(img_path + '/action_' + str(t) + '_' + str(rep) + '.jpg', 'JPEG')
-    rgb_env.close()
+def save_images(id_path, opt, sess, targetQN, episode, save_steps=500, num_repeats=4):
+    # # todo: problem: the environments aren't simultaneous
+    # env = rgb_env = gym.make(opt.env_id)
+    # env.reset()
+    # rgb_env.reset()
+    # action = get_random_action()
+    #
+    # for step in range(opt.hyper.max_steps):
+    #     obs = [None for _ in range(num_repeats)]
+    #
+    #     for rep in range(num_repeats):
+    #
+    #         # todo: activate for deepmind_lab
+    #         # if not env.is_running():
+    #         #     env.reset()
+    #
+    #         obs[step], reward, done, info = env.step(action)
+    #         rgb_state, _, done_rgb, _ = rgb_env.step(action)
+    #
+    #         if done or done_rgb:
+    #             break
+    #
+    #     states = np.stack(obs, axis=2)
+    #     action = eps_greedy(opt.hyper.explore_test, sess, targetQN, states)
+    #
+    #     for rep in range(num_repeats):
+    #
+    #
+    #         if done or done_rgb:
+    #             rgb_env.close()
+    #             return
+    #         else:
+    #             img = Image.fromarray(rgb_state, 'RGB')
+    #             img_path = os.path.join(id_path, 'images_' + str(episode))
+    #             if not os.path.exists(img_path):
+    #                 os.mkdir(img_path)
+    #             img.save(img_path + '/action_' + str(t) + '_' + str(rep) + '.jpg', 'JPEG')
+    # rgb_env.close()
     return
 
 
@@ -111,14 +128,14 @@ def pretrain(env, memory, opt):
     return state
 
 
-def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path, total_reward=0):
+def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
     global summ
     saver = tf.train.Saver()
+
     with tf.Session() as sess:
         # Initialize variables
         sess.run(tf.global_variables_initializer())
         train_writer = tf.summary.FileWriter(id_path, sess.graph)
-        # tf.summary.scalar('reward', total_reward)
 
         step = 0
         for ep in range(1, opt.hyper.train_episodes):
@@ -179,14 +196,14 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path, 
                                             feed_dict={mainQN.inputs_: states,
                                                        mainQN.targetQs_: target_Qs,
                                                        mainQN.reward: rewards,
-                                                       mainQN.action: actions})
+                                                       mainQN.action: actions,
+                                                       mainQN.reward_summary: total_reward})
 
             train_writer.add_summary(summ, ep)
 
-            # if ep % opt.hyper.save_log == 0:
-            # if ep % 1 == 0:
-                # print("\nSaving graph...")
-                # saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
+            if ep % opt.hyper.save_log == 0:
+                print("\nSaving graph...")
+                saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
 
                 # save_images(id_path, opt, sess, targetQN, env, ep)
 
