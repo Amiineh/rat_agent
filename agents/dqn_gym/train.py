@@ -111,16 +111,14 @@ def pretrain(env, memory, opt):
     return state
 
 
-def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
+def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path, total_reward=0):
     global summ
     saver = tf.train.Saver()
     with tf.Session() as sess:
         # Initialize variables
         sess.run(tf.global_variables_initializer())
         train_writer = tf.summary.FileWriter(id_path, sess.graph)
-        total_reward, explore_p = 0, 0
-        tf.summary.scalar('reward', total_reward)
-        tf.summary.scalar('explore_p', explore_p)
+        # tf.summary.scalar('reward', total_reward)
 
         step = 0
         for ep in range(1, opt.hyper.train_episodes):
@@ -186,9 +184,10 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
             train_writer.add_summary(summ, ep)
 
             # if ep % opt.hyper.save_log == 0:
-            if ep % 1 == 0:
-                print("\nSaving graph...")
-                saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
+            # if ep % 1 == 0:
+                # print("\nSaving graph...")
+                # saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
+
                 # save_images(id_path, opt, sess, targetQN, env, ep)
 
                 # print("Resoring...")
