@@ -5,7 +5,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--experiment_index', type=int, required=True)
+parser.add_argument('--experiment_index', type=int, nargs='+', required=True)
 parser.add_argument('--agent', type=str, required=True)
 parser.add_argument('--host_filesystem', type=str, required=True)
 parser.add_argument('--run', type=str, required=True)
@@ -56,4 +56,6 @@ switcher = {
 }
 
 
-switcher[FLAGS.run](FLAGS.experiment_index)
+for ex in FLAGS.experiment_index:
+    print('Running experiment',  ex)
+    switcher[FLAGS.run](ex)
