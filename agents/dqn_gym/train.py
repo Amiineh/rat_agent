@@ -176,7 +176,7 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                                                        mainQN.reward: rewards,
                                                        mainQN.action: actions})
 
-            train_writer.add_summary(summary, ep)
+                train_writer.add_summary(summary)
 
             if ep % opt.hyper.save_log == 0:
                 print("\nSaving graph...")
