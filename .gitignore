@@ -3,5 +3,6 @@ venv
 .idea
 agents/dqn_gym/__pycache__/*
 *.pyc
+venv_python2/*
 
 

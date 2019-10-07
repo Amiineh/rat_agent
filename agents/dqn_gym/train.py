@@ -204,6 +204,7 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                     env.reset()
 
                     print('\nEpisode: {}'.format(ep),
+                          '\nStep: {}'.format(step),
                           '\nTotal reward: {}'.format(total_reward),
                           '\nExplore P: {:.4f}'.format(explore_p))
                     sys.stdout.flush()
