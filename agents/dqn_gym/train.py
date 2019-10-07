@@ -10,7 +10,7 @@ import sys
 import os
 
 
-def save_images(id_path, opt, sess, targetQN, env, episode, save_steps=500, num_repeats=4):
+def save_images(id_path, opt, sess, targetQN, env, save_steps=100, num_repeats=4):
     action = get_random_action()
     done = None
     for step in range(save_steps):
@@ -24,7 +24,7 @@ def save_images(id_path, opt, sess, targetQN, env, episode, save_steps=500, num_
 
             obs[rep], reward, done, info = env.step(action)
             img = Image.fromarray(obs[rep])
-            img_path = os.path.join(id_path, 'images_' + str(episode))
+            img_path = os.path.join(id_path, 'images')
             if not os.path.exists(img_path):
                 os.mkdir(img_path)
             img.save(img_path + '/action_' + str(step) + '_' + str(rep) + '.jpg', 'JPEG')
@@ -38,44 +38,6 @@ def save_images(id_path, opt, sess, targetQN, env, episode, save_steps=500, num_
         else:
             states = np.stack(obs, axis=2)
             action = eps_greedy(opt.hyper.explore_test, sess, targetQN, states)
-
-    # # todo: problem: the environments aren't simultaneous
-    # env = rgb_env = gym.make(opt.env_id)
-    # env.reset()
-    # rgb_env.reset()
-    # action = get_random_action()
-    #
-    # for step in range(opt.hyper.max_steps):
-    #     obs = [None for _ in range(num_repeats)]
-    #
-    #     for rep in range(num_repeats):
-    #
-    #         # todo: activate for deepmind_lab
-    #         # if not env.is_running():
-    #         #     env.reset()
-    #
-    #         obs[step], reward, done, info = env.step(action)
-    #         rgb_state, _, done_rgb, _ = rgb_env.step(action)
-    #
-    #         if done or done_rgb:
-    #             break
-    #
-    #     states = np.stack(obs, axis=2)
-    #     action = eps_greedy(opt.hyper.explore_test, sess, targetQN, states)
-    #
-    #     for rep in range(num_repeats):
-    #
-    #
-    #         if done or done_rgb:
-    #             rgb_env.close()
-    #             return
-    #         else:
-    #             img = Image.fromarray(rgb_state, 'RGB')
-    #             img_path = os.path.join(id_path, 'images_' + str(episode))
-    #             if not os.path.exists(img_path):
-    #                 os.mkdir(img_path)
-    #             img.save(img_path + '/action_' + str(t) + '_' + str(rep) + '.jpg', 'JPEG')
-    # rgb_env.close()
     return
 
 
@@ -241,9 +203,9 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
             if ep % opt.hyper.save_log == 0:
                 print("\nSaving graph...")
                 saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
+                print("\nSaving images...")
                 sys.stdout.flush()
-
-            save_images(id_path, opt, sess, targetQN, env, ep)
+                save_images(id_path, opt, sess, targetQN, env)
 
                 # print("Resoring...")
                 # saver.restore(sess, tf.train.latest_checkpoint('/mnt/hgfs/ryanprinster/lab/models/'))

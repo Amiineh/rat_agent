@@ -32,7 +32,7 @@ class Hyperparameters(object):
         self.update_target_every = 2000
 
         # save
-        self.save_log = 1000
+        self.save_log = 100
 
 
 class Environment(object):
