@@ -14,7 +14,8 @@ FLAGS = parser.parse_args()
 
 output_path = {
     'amineh': '/Users/amineh.ahm/Desktop/Mice/code/rat_exp/',
-    'om': '/om/user/amineh/rat_exp/'}[FLAGS.host_filesystem]
+    'om': '/om/user/amineh/rat_exp/',
+    'om2': '/om2/user/amineh/rat_exp/'}[FLAGS.host_filesystem]
 
 if FLAGS.agent == "priint":
     from agents.priint import experiments
