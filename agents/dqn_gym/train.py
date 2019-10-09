@@ -16,6 +16,7 @@ def get_last_ep(path):
     files = []
     if os.path.exists(path):
         files = [f for f in listdir(path) if isfile(join(path, f))]
+        files.sort()
     if len(files) == 0:
         return 1
     last = files[-1].split('-')[1].split('.')[0]
