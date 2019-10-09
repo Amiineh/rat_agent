@@ -8,6 +8,18 @@ from agents.dqn_gym.network import QNetwork
 from PIL import Image
 import sys
 import os
+from os import listdir
+from os.path import isfile, join
+
+
+def get_last_ep(path):
+    files = []
+    if os.path.exists(path):
+        files = [f for f in listdir(path) if isfile(join(path, f))]
+    if len(files) == 0:
+        return 1
+    last = files[-1].split('-')[1].split('.')[0]
+    return int(last)
 
 
 def save_images(id_path, opt, sess, targetQN, env, save_steps=100, num_repeats=4):
@@ -118,6 +130,7 @@ def pretrain(env, memory, opt):
             state = next_state
 
     print('pretraining is done.')
+    print('memory length: ', len(memory.buffer))
     sys.stdout.flush()
     return state
 
@@ -132,9 +145,14 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
         # Initialize variables
         sess.run(tf.global_variables_initializer())
         train_writer = tf.summary.FileWriter(id_path, sess.graph)
+        if os.path.exists(id_path + '/saved/'):
+            saver.restore(sess, tf.train.latest_checkpoint(id_path + '/saved/'))
+            print('Restored model.')
+        last_ep = get_last_ep(id_path + '/saved/')
+        print('Running model from episode: {}'.format(last_ep))
 
         step = 0
-        for ep in range(1, opt.hyper.train_episodes):
+        for ep in range(last_ep, opt.hyper.train_episodes):
             total_reward = 0
             t = 0
             while t < opt.hyper.max_steps:
@@ -168,7 +186,9 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                     print('\nEpisode: {}'.format(ep),
                           '\nStep: {}'.format(step),
                           '\nTotal reward: {}'.format(total_reward),
-                          '\nExplore P: {:.4f}'.format(explore_p))
+                          '\nExplore P: {:.4f}'.format(explore_p),
+                          '\nmemory size: {}'.format(sys.getsizeof(memory.buffer)),
+                          '\nmemory len: {}'.format(len(memory.buffer)))
                     sys.stdout.flush()
 
                 else:
@@ -200,15 +220,13 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
 
             train_writer.add_summary(summ, ep)
 
-            if ep % opt.hyper.save_log == 0:
+            if ep % 1 == 0:
+            # if ep % opt.hyper.save_log == 0:
                 print("\nSaving graph...")
                 saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
                 print("\nSaving images...")
                 sys.stdout.flush()
                 save_images(id_path, opt, sess, targetQN, env)
-
-                # print("Resoring...")
-                # saver.restore(sess, tf.train.latest_checkpoint('/mnt/hgfs/ryanprinster/lab/models/'))
 
 
 def run(opt, id_path):
