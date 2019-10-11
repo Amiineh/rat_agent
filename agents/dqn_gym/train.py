@@ -129,6 +129,9 @@ def pretrain(env, memory, opt):
         else:
             memory.add((state, action, reward, next_state, done))
             state = next_state
+        print('\nmemory size: {}'.format(sys.getsizeof(memory.buffer)),
+              '\nmemory len: {}'.format(len(memory.buffer)))
+        sys.stdout.flush()
 
     print('pretraining is done.')
     print('memory length: ', len(memory.buffer))
@@ -221,8 +224,8 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
 
             train_writer.add_summary(summ, ep)
 
-            if ep % 1 == 0:
-            # if ep % opt.hyper.save_log == 0:
+            # if ep % 1 == 0:
+            if ep % opt.hyper.save_log == 0:
                 print("\nSaving graph...")
                 saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
                 print("\nSaving images...")

@@ -26,10 +26,10 @@ class Hyperparameters(object):
         # Memory parameters
         self.memory_size = 1000000  # memory capacity
         self.batch_size = 32  # experience mini-batch size
-        self.pretrain_length = self.batch_size  # number experiences to pretrain the memory
+        self.pretrain_length = self.memory_size  # number experiences to pretrain the memory
 
         # target QN
-        self.update_target_every = 2000
+        self.update_target_every = 2001
 
         # save
         self.save_log = 100
