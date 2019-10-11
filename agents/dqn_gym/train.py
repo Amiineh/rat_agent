@@ -10,6 +10,7 @@ import sys
 import os
 from os import listdir
 from os.path import isfile, join
+global memory
 
 
 def get_last_ep(path):
@@ -198,31 +199,31 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
                     state = next_state
                     t += 1
 
-                # Sample mini-batch from memory
-                batch = memory.sample(opt.hyper.batch_size)
-                states = np.array([each[0] for each in batch])
-                actions = np.array([each[1] for each in batch])
-                rewards = np.array([each[2] for each in batch])
-                next_states = np.array([each[3] for each in batch])
-                dones = np.array([each[4] for each in batch])
+                if t % opt.hyper.train_freq == 0:
+                    # Sample mini-batch from memory
+                    batch = memory.sample(opt.hyper.batch_size)
+                    states = np.array([each[0] for each in batch])
+                    actions = np.array([each[1] for each in batch])
+                    rewards = np.array([each[2] for each in batch])
+                    next_states = np.array([each[3] for each in batch])
+                    dones = np.array([each[4] for each in batch])
 
-                target_Qs = sess.run(targetQN.output, feed_dict={targetQN.inputs_: next_states})
-                # Set target_Qs to 0 for states where episode ends
-                episode_ends = dones.all()
-                target_Qs[episode_ends] = 0
-                merge = tf.summary.merge_all()
+                    target_Qs = sess.run(targetQN.output, feed_dict={targetQN.inputs_: next_states})
+                    # Set target_Qs to 0 for states where episode ends
+                    episode_ends = dones.all()
+                    target_Qs[episode_ends] = 0
+                    merge = tf.summary.merge_all()
 
-                loss, _, summ = sess.run([mainQN.loss, mainQN.train_op, merge],
-                                            feed_dict={mainQN.inputs_: states,
-                                                       mainQN.targetQs_: target_Qs,
-                                                       mainQN.reward: rewards,
-                                                       mainQN.action: actions,
-                                                       mainQN.reward_summary: total_reward})
+                    loss, _, summ = sess.run([mainQN.loss, mainQN.train_op, merge],
+                                                feed_dict={mainQN.inputs_: states,
+                                                           mainQN.targetQs_: target_Qs,
+                                                           mainQN.reward: rewards,
+                                                           mainQN.action: actions,
+                                                           mainQN.reward_summary: total_reward})
 
             train_writer.add_summary(summ, ep)
 
-            if ep % 1 == 0:
-            # if ep % opt.hyper.save_log == 0:
+            if ep % opt.hyper.save_log == 0:
                 print("\nSaving graph...")
                 saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
                 print("\nSaving images...")

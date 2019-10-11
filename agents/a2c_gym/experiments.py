@@ -8,13 +8,16 @@ class Hyperparameters(object):
         # General Parameters
         self.max_steps = 5000   # max steps in an episode
         self.train_episodes = 10000  # max number of episodes
-        self.gamma = 0.99  # future reward discount
+        self.n = 20  # n-step updating
+        self.entropy_reg_term = 1  # 1000000. #regularization term for entropy
+        self.normalise_entropy = False  # when true normalizes entropy to be in [-1, 0] to be more invariant to different size action spaces
 
         # Exploration parameters
         self.explore_start = 1.0  # exploration probability at start
         self.explore_stop = 0.1  # minimum exploration probability
         self.decay_rate = 0.002  # exponential decay rate for exploration prob
         self.explore_test = 0.01  # exploration rate for test time
+        self.gamma = 0.99  # future reward discount
 
         # Network parameters
         self.kernel_size = [8, 4, 3]
@@ -23,16 +26,8 @@ class Hyperparameters(object):
         self.hidden_size = 512  # number of units in each Q-network hidden layer
         self.learning_rate = lr  # Q-network learning rate
 
-        # Memory parameters
-        self.memory_size = 1000000  # memory capacity
-        self.batch_size = 32  # experience mini-batch size
-        self.pretrain_length = 50000  # number experiences to pretrain the memory
-
-        # target QN
-        self.update_target_every = 10000
-
-        # train
-        self.train_freq = 4
+        self.num_envs = self.batch_size = 32  # experience mini-batch size
+        self.pretrain_length = self.batch_size  # number experiences to pretrain the memory
 
         # save
         self.save_log = 100
@@ -107,7 +102,7 @@ def generate_experiments(output_path):
     for lr in [0.1, 0.01, 0.001, 0.0001, 0.00001]:
         for env_id in ['Breakout-v0']:
             hyper = Hyperparameters(lr=lr)
-            exp = Experiment(id=idx_base, agent='dqn_gym', env_id=env_id, output_path='train_' + str(idx_base), hyper=hyper)
+            exp = Experiment(id=idx_base, agent='a2c_gym', env_id=env_id, output_path='train_' + str(idx_base), hyper=hyper)
 
             idx = exp_exists(exp, info)
             if idx is not False:
