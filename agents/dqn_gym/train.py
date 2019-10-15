@@ -10,8 +10,8 @@ import sys
 import os
 from os import listdir
 from os.path import isfile, join
-global memory
-
+import gc
+memory = Memory(capacity=1000)
 
 def get_last_ep(path):
     files = []
@@ -110,7 +110,7 @@ def env_step(env, action, num_repeats=4):
     return next_state, R, done
 
 
-def pretrain(env, memory, opt):
+def pretrain(env, opt):
     print('pretraining...')
     sys.stdout.flush()
     state, reward, done = env_step(env, get_random_action())
@@ -140,12 +140,13 @@ def pretrain(env, memory, opt):
     return state
 
 
-def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
+def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
     print('started training...')
     sys.stdout.flush()
     global summ
     saver = tf.train.Saver(max_to_keep=2, keep_checkpoint_every_n_hours=1)
 
+    gc.collect()
     with tf.Session() as sess:
         # Initialize variables
         sess.run(tf.global_variables_initializer())
@@ -236,7 +237,6 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
 
 def run(opt, id_path):
     tf.reset_default_graph()
-    memory = Memory(capacity=opt.hyper.memory_size)
     mainQN = QNetwork(name='main_qn', opt=opt)
     mainQN.__init_train__(opt)
     targetQN = QNetwork(name='target_qn', opt=opt)
@@ -250,7 +250,7 @@ def run(opt, id_path):
     # env = wrappers.Monitor(env, directory=id_path + '/video', force=True)
     env.reset()
 
-    state = pretrain(env, memory, opt)
-    train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path)
+    state = pretrain(env, opt)
+    train(env, state, opt, mainQN, targetQN, update_target_op, id_path)
 
     env.monitor.close()
