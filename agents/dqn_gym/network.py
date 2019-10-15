@@ -33,10 +33,10 @@ class QNetwork:
         self.loss = tf.reduce_mean(tf.square(self.y - batched_index(self.output, self.action)))
         self.train_op = tf.train.RMSPropOptimizer(opt.hyper.learning_rate).minimize(self.loss)
 
-        tf.summary.scalar('loss', self.loss)
+        # tf.summary.scalar('loss', self.loss)
 
         self.reward_summary = tf.placeholder(tf.float32, name='reward_summary')
-        tf.summary.scalar('reward', self.reward_summary)
+        # tf.summary.scalar('reward', self.reward_summary)
 
 
 # from trfl:

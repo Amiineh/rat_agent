@@ -143,14 +143,14 @@ def pretrain(env, opt):
 def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
     print('started training...')
     sys.stdout.flush()
-    global summ
+    # global summ
     saver = tf.train.Saver(max_to_keep=2, keep_checkpoint_every_n_hours=1)
 
     gc.collect()
     with tf.Session() as sess:
         # Initialize variables
         sess.run(tf.global_variables_initializer())
-        train_writer = tf.summary.FileWriter(id_path, sess.graph)
+        # train_writer = tf.summary.FileWriter(id_path, sess.graph)
         if os.path.exists(id_path + '/saved/'):
             saver.restore(sess, tf.train.latest_checkpoint(id_path + '/saved/'))
             print('Restored model.')
@@ -216,16 +216,16 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
                     # Set target_Qs to 0 for states where episode ends
                     episode_ends = dones.all()
                     target_Qs[episode_ends] = 0
-                    merge = tf.summary.merge_all()
+                    # merge = tf.summary.merge_all()
 
-                    loss, _, summ = sess.run([mainQN.loss, mainQN.train_op, merge],
+                    loss, _ = sess.run([mainQN.loss, mainQN.train_op],
                                                 feed_dict={mainQN.inputs_: states,
                                                            mainQN.targetQs_: target_Qs,
                                                            mainQN.reward: rewards,
                                                            mainQN.action: actions,
                                                            mainQN.reward_summary: total_reward})
 
-            train_writer.add_summary(summ, ep)
+            # train_writer.add_summary(summ, ep)
 
             if ep % opt.hyper.save_log == 0:
                 print("\nSaving graph...")
