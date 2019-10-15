@@ -32,6 +32,11 @@ if FLAGS.agent == "dqn_gym":
     from agents.dqn_gym.train import run
     output_path = output_path + "dqn_gym/"
 
+if FLAGS.agent == "a2c_gym":
+    from agents.a2c_gym import experiments
+    from agents.a2c_gym.train import run
+    output_path = output_path + "a2c_gym/"
+
 
 def generate_experiments(id):
     # is is not used
