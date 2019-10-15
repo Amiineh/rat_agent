@@ -236,7 +236,7 @@ def train(env, memory, state, opt, mainQN, targetQN, update_target_op, id_path):
 
 def run(opt, id_path):
     tf.reset_default_graph()
-    memory = Memory(max_size=opt.hyper.memory_size)
+    memory = Memory(capacity=opt.hyper.memory_size)
     mainQN = QNetwork(name='main_qn', opt=opt)
     mainQN.__init_train__(opt)
     targetQN = QNetwork(name='target_qn', opt=opt)

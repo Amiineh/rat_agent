@@ -23,18 +23,18 @@ class Memory(object):
 
     def __init__(self, capacity):
         self.capacity = capacity
-        self.memory = []
+        self.buffer = []
         self.position = 0
 
     def add(self, experience):
         """Saves a transition."""
-        if len(self.memory) < self.capacity:
-            self.memory.append(None)
-        self.memory[self.position] = experience
+        if len(self.buffer) < self.capacity:
+            self.buffer.append(None)
+        self.buffer[self.position] = experience
         self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
+        return random.sample(self.buffer, batch_size)
 
     def __len__(self):
-        return len(self.memory)
+        return len(self.buffer)
