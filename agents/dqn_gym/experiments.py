@@ -4,6 +4,8 @@ import os
 
 class Hyperparameters(object):
 
+    def __init__(self,
+                 max_steps=5000,  # max steps in an episode
                  train_episodes=10000,  # max number of episodes
                  gamma=0.99,  # future reward discount
                  explore_start=1.0,  # exploration probability at start
