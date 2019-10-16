@@ -19,7 +19,7 @@ class Hyperparameters(object):
                  learning_rate=0.0001,  # Q-network learning rate
                  memory_size=1000000,  # memory capacity
                  batch_size=32,  # experience mini-batch size
-                 pretrain_length=50000,  # number experiences to pretrain the memory
+                 pretrain_length=1000000,  # number experiences to pretrain the memory
                  update_target_every=10000,  # target QN
                  train_freq=4,  # train
                  save_log=100,  # save

@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH -N 1
 #SBATCH -c 3
-#SBATCH --array=10
+#SBATCH --array=22
 #SBATCH --job-name=dqn
-#SBATCH --mem=32GB
+#SBATCH --mem=40GB
 #SBATCH --gres=gpu:tesla-k80:1
 #SBATCH -t 24:00:00
 #SBATCH -D /om/user/amineh/rat_exp/dqn_gym/log/
