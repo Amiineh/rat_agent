@@ -11,7 +11,7 @@ import os
 from os import listdir
 from os.path import isfile, join
 import gc
-memory = Memory(capacity=1000)
+memory = Memory(capacity=1000000)
 
 def get_last_ep(path):
     files = []
@@ -251,6 +251,7 @@ def run(opt, id_path):
     env.reset()
 
     state = pretrain(env, opt)
+    gc.collect()
     train(env, state, opt, mainQN, targetQN, update_target_op, id_path)
 
     env.monitor.close()
