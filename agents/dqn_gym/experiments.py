@@ -5,8 +5,7 @@ import os
 class Hyperparameters(object):
 
     def __init__(self,
-                 max_steps=5000,  # max steps in an episode
-                 train_episodes=10000,  # max number of episodes
+                 max_steps=50000000,  # max steps in an episode
                  gamma=0.99,  # future reward discount
                  explore_start=1.0,  # exploration probability at start
                  explore_stop=0.1,  # minimum exploration probability
@@ -19,10 +18,10 @@ class Hyperparameters(object):
                  learning_rate=0.0001,  # Q-network learning rate
                  memory_size=1000000,  # memory capacity
                  batch_size=32,  # experience mini-batch size
-                 pretrain_length=1000000,  # number experiences to pretrain the memory
+                 pretrain_length=50000,  # number experiences to pretrain the memory
                  update_target_every=10000,  # target QN
                  train_freq=4,  # train
-                 save_log=100,  # save
+                 save_freq=125000,  # save
                  ):
 
         if output_filters_conv is None:
@@ -33,7 +32,6 @@ class Hyperparameters(object):
             stride = [4, 2, 1]
 
         self.max_steps = max_steps
-        self.train_episodes = train_episodes
         self.gamma = gamma
         self.explore_start = explore_start
         self.explore_stop = explore_stop
@@ -49,7 +47,7 @@ class Hyperparameters(object):
         self.pretrain_length = pretrain_length
         self.update_target_every = update_target_every
         self.train_freq = train_freq
-        self.save_log = save_log
+        self.save_freq = save_freq
 
 
 class Environment(object):

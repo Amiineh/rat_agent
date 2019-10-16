@@ -15,7 +15,7 @@ import gc
 memory = Memory()
 
 
-def get_last_ep(path):
+def get_last_step(path):
     files = []
     if os.path.exists(path):
         files = [f for f in listdir(path) if isfile(join(path, f))]
@@ -122,18 +122,15 @@ def pretrain(env, opt):
 
         action = get_random_action()
         next_state, reward, done = env_step(env, action)
+        memory.add((state, action, reward, next_state, done))
 
         if done:
-            # The simulation fails so no next state
-            next_state = np.zeros(state.shape)
-            memory.add((state, action, reward, next_state, done))
             # Start new episode
             env.reset()
         else:
-            memory.add((state, action, reward, next_state, done))
             state = next_state
-        print('\nmemory size: {}'.format(sys.getsizeof(memory.buffer)),
-              '\nmemory len: {}'.format(len(memory.buffer)))
+
+        print('memory len: {}'.format(len(memory.buffer)))
         sys.stdout.flush()
 
     print('pretraining is done.')
@@ -143,95 +140,89 @@ def pretrain(env, opt):
 
 
 def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
+    global summ
     print('started training...')
     sys.stdout.flush()
-    # global summ
     saver = tf.train.Saver(max_to_keep=2, keep_checkpoint_every_n_hours=1)
 
     gc.collect()
     with tf.Session() as sess:
         # Initialize variables
         sess.run(tf.global_variables_initializer())
-        # train_writer = tf.summary.FileWriter(id_path, sess.graph)
+        # Saver
         if os.path.exists(id_path + '/saved/'):
             saver.restore(sess, tf.train.latest_checkpoint(id_path + '/saved/'))
             print('Restored model.')
-        last_ep = get_last_ep(id_path + '/saved/')
-        print('Running model from episode: {}'.format(last_ep))
+        last_step = get_last_step(id_path + '/saved/')
+        print('Running model from step: {}'.format(last_step))
 
-        step = 0
-        for ep in range(last_ep, opt.hyper.train_episodes):
+        # Summaries
+        train_writer = tf.summary.FileWriter(id_path, sess.graph)
+        merge = tf.summary.merge_all()
+
+        for step in range(last_step, opt.hyper.max_steps):
             total_reward = 0
-            t = 0
-            while t < opt.hyper.max_steps:
-                step += 1
 
-                # update target q network
-                if step % opt.hyper.update_target_every == 0:
-                    sess.run(update_target_op)
-                    print("\nCopied model parameters to target network.")
-                    sys.stdout.flush()
+            # update target q network
+            if step % opt.hyper.update_target_every == 0:
+                sess.run(update_target_op)
+                print("\nCopied model parameters to target network.")
+                sys.stdout.flush()
 
-                # Explore or Exploit
-                explore_p = opt.hyper.explore_stop + \
-                            (opt.hyper.explore_start - opt.hyper.explore_stop) * np.exp(-opt.hyper.decay_rate * step)
-                action = eps_greedy(explore_p, sess, mainQN, state)
+            # Explore or Exploit
+            explore_p = opt.hyper.explore_stop + \
+                        (opt.hyper.explore_start - opt.hyper.explore_stop) * np.exp(-opt.hyper.decay_rate * step)
+            action = eps_greedy(explore_p, sess, mainQN, state)
 
-                # Take action, get new state and reward
-                next_state, reward, done = env_step(env, action)
-                total_reward += reward
+            # Take action, get new state and reward
+            next_state, reward, done = env_step(env, action)
+            total_reward += reward
+            memory.add((state, action, reward, next_state, done))
 
-                # todo: change for deepmind_lab
-                if done or t == opt.hyper.max_steps - 1:
-                    # the episode ends so no next state
-                    next_state = np.zeros(state.shape)
-                    t = opt.hyper.max_steps
-                    # Add experience to memory
-                    memory.add((state, action, reward, next_state, done))
-                    # Start new episode
-                    env.reset()
+            # todo: change for deepmind_lab
+            if done:
+                # Reset environment
+                env.reset()
 
-                    print('\nEpisode: {}'.format(ep),
-                          '\nStep: {}'.format(step),
-                          '\nTotal reward: {}'.format(total_reward),
-                          '\nExplore P: {:.4f}'.format(explore_p),
-                          '\nmemory size: {}'.format(sys.getsizeof(memory.buffer)),
-                          '\nmemory len: {}'.format(len(memory.buffer)))
-                    sys.stdout.flush()
+                print('\nStep: {}'.format(step),
+                      '\nTotal reward: {}'.format(total_reward),
+                      '\nExplore P: {:.4f}'.format(explore_p),
+                      # '\nmemory size: {}'.format(sys.getsizeof(memory.buffer)),
+                      '\nmemory len: {}'.format(len(memory.buffer)))
+                sys.stdout.flush()
 
-                else:
-                    # Add experience to memory
-                    memory.add((state, action, reward, next_state, done))
-                    state = next_state
-                    t += 1
+            else:
+                state = next_state
 
-                if t % opt.hyper.train_freq == 0:
-                    # Sample mini-batch from memory
-                    batch = memory.sample(opt.hyper.batch_size)
-                    states = np.array([each[0] for each in batch])
-                    actions = np.array([each[1] for each in batch])
-                    rewards = np.array([each[2] for each in batch])
-                    next_states = np.array([each[3] for each in batch])
-                    dones = np.array([each[4] for each in batch])
+            if step % opt.hyper.train_freq == 0:
+                # Sample mini-batch from memory
+                batch = memory.sample(opt.hyper.batch_size)
+                states = np.array([each[0] for each in batch])
+                actions = np.array([each[1] for each in batch])
+                rewards = np.array([each[2] for each in batch])
+                next_states = np.array([each[3] for each in batch])
+                dones = np.array([each[4] for each in batch])
 
-                    target_Qs = sess.run(targetQN.output, feed_dict={targetQN.inputs_: next_states})
-                    # Set target_Qs to 0 for states where episode ends
-                    episode_ends = dones.all()
-                    target_Qs[episode_ends] = 0
-                    # merge = tf.summary.merge_all()
+                target_Qs = sess.run(targetQN.output, feed_dict={targetQN.inputs_: next_states})
+                # Set target_Qs to 0 for states where episode ends
+                episode_ends = dones.all()
+                target_Qs[episode_ends] = 0
 
-                    loss, _ = sess.run([mainQN.loss, mainQN.train_op],
-                                                feed_dict={mainQN.inputs_: states,
-                                                           mainQN.targetQs_: target_Qs,
-                                                           mainQN.reward: rewards,
-                                                           mainQN.action: actions,
-                                                           mainQN.reward_summary: total_reward})
+                loss, _, summ = sess.run([mainQN.loss, mainQN.train_op, merge],
+                                         feed_dict={mainQN.inputs_: states,
+                                                    mainQN.targetQs_: target_Qs,
+                                                    mainQN.reward: rewards,
+                                                    mainQN.action: actions,
+                                                    mainQN.reward_summary: total_reward})
 
-            # train_writer.add_summary(summ, ep)
+                train_writer.add_summary(summ, step)
 
-            if ep % opt.hyper.save_log == 0:
+            if step % 1000 == 0:
+                gc.collect()
+
+            if step % opt.hyper.save_freq == 0:
                 print("\nSaving graph...")
-                saver.save(sess, id_path + '/saved/ep', global_step=ep, write_meta_graph=False)
+                saver.save(sess, id_path + '/saved/ep', global_step=step, write_meta_graph=False)
                 print("\nSaving images...")
                 sys.stdout.flush()
                 save_images(id_path, opt, sess, targetQN, env)

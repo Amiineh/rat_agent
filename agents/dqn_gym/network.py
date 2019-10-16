@@ -30,13 +30,14 @@ class QNetwork:
         self.action = tf.placeholder(tf.int32, [opt.hyper.batch_size], name='action')
 
         self.y = self.reward + opt.hyper.gamma * tf.reduce_max(self.targetQs_, axis=1)
-        self.loss = tf.reduce_mean(tf.square(self.y - batched_index(self.output, self.action)))
+        self.error = self.y - batched_index(self.output, self.action)
+        self.loss = tf.reduce_mean(huber_loss(self.error, quadratic_linear_boundary=1.0))
         self.train_op = tf.train.RMSPropOptimizer(opt.hyper.learning_rate).minimize(self.loss)
 
-        # tf.summary.scalar('loss', self.loss)
+        tf.summary.scalar('loss', self.loss)
 
         self.reward_summary = tf.placeholder(tf.float32, name='reward_summary')
-        # tf.summary.scalar('reward', self.reward_summary)
+        tf.summary.scalar('reward', self.reward_summary)
 
 
 # from trfl:
@@ -64,3 +65,44 @@ def batched_index(values, indices):
         one_hot_indices = tf.one_hot(
             indices, tf.shape(values)[-1], dtype=values.dtype)
         return tf.reduce_sum(values * one_hot_indices, axis=-1)
+
+
+# from trfl
+# https://github.com/deepmind/trfl/blob/master/trfl/clipping_ops.py
+def huber_loss(input_tensor, quadratic_linear_boundary, name=None):
+  """Calculates huber loss of `input_tensor`.
+  For each value x in `input_tensor`, the following is calculated:
+  ```
+    0.5 * x^2                  if |x| <= d
+    0.5 * d^2 + d * (|x| - d)  if |x| > d
+  ```
+  where d is `quadratic_linear_boundary`.
+  When `input_tensor` is a loss this results in a form of gradient clipping.
+  This is, for instance, how gradients are clipped in DQN and its variants.
+  Args:
+    input_tensor: `Tensor`, input values to calculate the huber loss on.
+    quadratic_linear_boundary: `float`, the point where the huber loss function
+      changes from a quadratic to linear.
+    name: `string`, name for the operation (optional).
+  Returns:
+    `Tensor` of the same shape as `input_tensor`, containing values calculated
+    in the manner described above.
+  Raises:
+    ValueError: if quadratic_linear_boundary <= 0.
+  """
+  if quadratic_linear_boundary < 0:
+    raise ValueError("quadratic_linear_boundary must be > 0.")
+
+  with tf.name_scope(
+      name, default_name="huber_loss",
+      values=[input_tensor, quadratic_linear_boundary]):
+    abs_x = tf.abs(input_tensor)
+    delta = quadratic_linear_boundary
+    quad = tf.minimum(abs_x, delta)
+    # The following expression is the same in value as
+    # tf.maximum(abs_x - delta, 0), but importantly the gradient for the
+    # expression when abs_x == delta is 0 (for tf.maximum it would be 1). This
+    # is necessary to avoid doubling the gradient, since there is already a
+    # non-zero contribution to the gradient from the quadratic term.
+    lin = (abs_x - quad)
+    return 0.5 * quad**2 + delta * lin
