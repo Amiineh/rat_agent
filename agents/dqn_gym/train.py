@@ -11,7 +11,9 @@ import os
 from os import listdir
 from os.path import isfile, join
 import gc
-memory = Memory(capacity=1000000)
+
+memory = Memory()
+
 
 def get_last_ep(path):
     files = []
@@ -237,6 +239,7 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
 
 def run(opt, id_path):
     tf.reset_default_graph()
+    memory.set_capacity(opt.hyper.memory_size)
     mainQN = QNetwork(name='main_qn', opt=opt)
     mainQN.__init_train__(opt)
     targetQN = QNetwork(name='target_qn', opt=opt)

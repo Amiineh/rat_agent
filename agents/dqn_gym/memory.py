@@ -21,7 +21,7 @@ import random
 
 class Memory(object):
 
-    def __init__(self, capacity):
+    def __init__(self, capacity=1000):
         self.capacity = capacity
         self.buffer = []
         self.position = 0
@@ -38,3 +38,6 @@ class Memory(object):
 
     def __len__(self):
         return len(self.buffer)
+
+    def set_capacity(self, capacity):
+        self.capacity = capacity
