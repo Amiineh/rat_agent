@@ -21,9 +21,11 @@ def get_last_step(path):
         files = [f for f in listdir(path) if isfile(join(path, f))]
         files.sort()
     if len(files) == 0:
-        return 1
-    last = files[-1].split('-')[1].split('.')[0]
-    return int(last)
+        return 1, 0
+    ep, step = files[-1].split('.')[0].split('_')
+    ep = ep.split('-')[1]
+    step = step.split('-')[1]
+    return int(ep), int(step)
 
 
 def save_images(id_path, opt, sess, targetQN, env, save_steps=100, num_repeats=4):
@@ -81,6 +83,10 @@ def get_random_action():
     return random.randint(0, 3)
 
 
+def clip(reward):
+    return np.clip(reward, -1, 1)
+
+
 def index_to_english(env, action):
     # for Breakout: ['NOOP', 'FIRE', 'RIGHT', 'LEFT']
     english_names_of_actions = env.unwrapped.get_action_meanings()
@@ -122,6 +128,7 @@ def pretrain(env, opt):
 
         action = get_random_action()
         next_state, reward, done = env_step(env, action)
+        reward = clip(reward)
         memory.add((state, action, reward, next_state, done))
 
         if done:
@@ -143,7 +150,7 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
     global summ
     print('started training...')
     sys.stdout.flush()
-    saver = tf.train.Saver(max_to_keep=2, keep_checkpoint_every_n_hours=1)
+    saver = tf.train.Saver(max_to_keep=1, keep_checkpoint_every_n_hours=1)
 
     gc.collect()
     with tf.Session() as sess:
@@ -153,15 +160,17 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
         if os.path.exists(id_path + '/saved/'):
             saver.restore(sess, tf.train.latest_checkpoint(id_path + '/saved/'))
             print('Restored model.')
-        last_step = get_last_step(id_path + '/saved/')
-        print('Running model from step: {}'.format(last_step))
+        last_episode, last_step = get_last_step(id_path + '/saved/')
+        print('Running model from episode {} and step: {}'.format(last_episode, last_step))
 
         # Summaries
         train_writer = tf.summary.FileWriter(id_path, sess.graph)
         merge = tf.summary.merge_all()
 
+        total_reward = 0
+        episode_reward = 0
+        num_episodes = last_episode
         for step in range(last_step, opt.hyper.max_steps):
-            total_reward = 0
 
             # update target q network
             if step % opt.hyper.update_target_every == 0:
@@ -176,7 +185,8 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
 
             # Take action, get new state and reward
             next_state, reward, done = env_step(env, action)
-            total_reward += reward
+            episode_reward += reward
+            reward = clip(reward)
             memory.add((state, action, reward, next_state, done))
 
             # todo: change for deepmind_lab
@@ -184,12 +194,19 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
                 # Reset environment
                 env.reset()
 
-                print('\nStep: {}'.format(step),
-                      '\nTotal reward: {}'.format(total_reward),
+                total_reward += episode_reward
+                num_episodes += 1
+                avr_reward = total_reward / num_episodes
+
+                print('\nEpisode: {}'.format(num_episodes),
+                      '\nStep: {}'.format(step),
+                      '\nEpisode reward: {}'.format(episode_reward),
+                      '\nAverage reward: {:.2f}'.format(avr_reward),
                       '\nExplore P: {:.4f}'.format(explore_p),
                       # '\nmemory size: {}'.format(sys.getsizeof(memory.buffer)),
                       '\nmemory len: {}'.format(len(memory.buffer)))
                 sys.stdout.flush()
+                episode_reward = 0
 
             else:
                 state = next_state
@@ -222,7 +239,7 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
 
             if step % opt.hyper.save_freq == 0:
                 print("\nSaving graph...")
-                saver.save(sess, id_path + '/saved/ep', global_step=step, write_meta_graph=False)
+                saver.save(sess, id_path + '/saved/ep-' + str(num_episodes) + '_step', global_step=step, write_meta_graph=False)
                 print("\nSaving images...")
                 sys.stdout.flush()
                 save_images(id_path, opt, sess, targetQN, env)
