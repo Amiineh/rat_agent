@@ -12,10 +12,9 @@ class ActorCriticNetwork:
                                           name='inputs')
             self.conv1 = tf.contrib.layers.conv2d(self.inputs_, opt.hyper.output_filters_conv[0], kernel_size=opt.hyper.kernel_size[0], stride=opt.hyper.stride[0])
             self.conv2 = tf.contrib.layers.conv2d(self.conv1, opt.hyper.output_filters_conv[1], kernel_size=opt.hyper.kernel_size[1], stride=opt.hyper.stride[1])
-            self.conv3 = tf.contrib.layers.conv2d(self.conv2, opt.hyper.output_filters_conv[2], kernel_size=opt.hyper.kernel_size[2], stride=opt.hyper.stride[2])
 
             self.fc1 = tf.contrib.layers.fully_connected(
-                tf.reshape(self.conv3, [-1, self.conv3.shape[1] * self.conv3.shape[2] * self.conv3.shape[3]]),
+                tf.reshape(self.conv2, [-1, self.conv2.shape[1] * self.conv2.shape[2] * self.conv2.shape[3]]),
                 opt.hyper.hidden_size)
 
             # Value function - Linear output layer

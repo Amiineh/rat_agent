@@ -168,6 +168,7 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
         merge = tf.summary.merge_all()
 
         total_reward = 0
+        max_reward = 0
         episode_reward = 0
         num_episodes = last_episode
         for step in range(last_step, opt.hyper.max_steps):
@@ -194,14 +195,16 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
                 # Reset environment
                 env.reset()
 
-                total_reward += episode_reward
+                total_reward = episode_reward
                 num_episodes += 1
-                avr_reward = total_reward / num_episodes
+                # avr_reward = total_reward / num_episodes
+                max_reward = max(max_reward, episode_reward)
 
                 print('\nEpisode: {}'.format(num_episodes),
                       '\nStep: {}'.format(step),
                       '\nEpisode reward: {}'.format(episode_reward),
-                      '\nAverage reward: {:.2f}'.format(avr_reward),
+                      '\nMax reward: {}'.format(max_reward),
+                      # '\nAverage reward: {:.2f}'.format(avr_reward),
                       '\nExplore P: {:.4f}'.format(explore_p),
                       # '\nmemory size: {}'.format(sys.getsizeof(memory.buffer)),
                       '\nmemory len: {}'.format(len(memory.buffer)))

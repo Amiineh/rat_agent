@@ -19,7 +19,7 @@ class Hyperparameters(object):
                  kernel_size=None,
                  stride=None,
                  output_filters_conv=None,
-                 hidden_size=512,  # number of units in each Q-network hidden layer
+                 hidden_size=256,  # number of units in each Q-network hidden layer
                  learning_rate=0.0001,  # Q-network learning rate
                  memory_size=1000000,  # memory capacity
                  batch_size=32,  # experience mini-batch size
@@ -28,11 +28,11 @@ class Hyperparameters(object):
                  ):
 
         if output_filters_conv is None:
-            output_filters_conv = [32, 64, 64]
+            output_filters_conv = [16, 32]
         if kernel_size is None:
-            kernel_size = [8, 4, 3]
+            kernel_size = [8, 4]
         if stride is None:
-            stride = [4, 2, 1]
+            stride = [4, 2]
 
         self.max_steps = max_steps
         self.train_episodes = train_episodes
