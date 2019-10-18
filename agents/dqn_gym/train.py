@@ -21,7 +21,7 @@ def get_last_step(path):
         files = [f for f in listdir(path) if isfile(join(path, f))]
         files.sort()
     if len(files) == 0:
-        return 1, 0
+        return 0, 0
     ep, step = files[-1].split('.')[0].split('_')
     ep = ep.split('-')[1]
     step = step.split('-')[1]
@@ -65,6 +65,14 @@ def update_target_variables(mainQN, targetQN, tau=1.0):
     # assert len(q_vars) == len(q_target_vars)
     update_target_op = [v_t.assign(v_t * (1. - tau) + v * tau) for v_t, v in zip(q_target_vars, q_vars)]
     return update_target_op
+
+
+def get_epsilon(step, opt):
+    # eps = 0.1 + 0.9 * (1M - step) / 1M
+    eps = opt.hyper.explore_stop + \
+          max(0, (opt.hyper.explore_start - opt.hyper.explore_stop) *
+              ((opt.hyper.explore_duration - step) / opt.hyper.explore_duration))
+    return eps
 
 
 def eps_greedy(explore_p, sess, model, state):
@@ -129,7 +137,7 @@ def pretrain(env, opt):
         action = get_random_action()
         next_state, reward, done = env_step(env, action)
         reward = clip(reward)
-        memory.add((state, action, reward, next_state, done))
+        memory.add((np.uint8(state), action, reward, np.uint8(next_state), done))
 
         if done:
             # Start new episode
@@ -180,15 +188,14 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
                 sys.stdout.flush()
 
             # Explore or Exploit
-            explore_p = opt.hyper.explore_stop + \
-                        (opt.hyper.explore_start - opt.hyper.explore_stop) * np.exp(-opt.hyper.decay_rate * step)
+            explore_p = get_epsilon(step, opt)
             action = eps_greedy(explore_p, sess, mainQN, state)
 
             # Take action, get new state and reward
             next_state, reward, done = env_step(env, action)
             episode_reward += reward
             reward = clip(reward)
-            memory.add((state, action, reward, next_state, done))
+            memory.add((np.uint8(state), action, reward, np.uint8(next_state), done))
 
             # todo: change for deepmind_lab
             if done:
@@ -240,9 +247,10 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
             if step % 1000 == 0:
                 gc.collect()
 
-            if step % opt.hyper.save_freq == 0:
+            if step > last_step and step % opt.hyper.save_freq == 0:
                 print("\nSaving graph...")
-                saver.save(sess, id_path + '/saved/ep-' + str(num_episodes) + '_step', global_step=step, write_meta_graph=False)
+                saver.save(sess, id_path + '/saved/ep-' + str(num_episodes) + '_step', global_step=step,
+                           write_meta_graph=False)
                 print("\nSaving images...")
                 sys.stdout.flush()
                 save_images(id_path, opt, sess, targetQN, env)

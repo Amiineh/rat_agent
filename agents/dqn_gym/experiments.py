@@ -9,7 +9,7 @@ class Hyperparameters(object):
                  gamma=0.99,  # future reward discount
                  explore_start=1.0,  # exploration probability at start
                  explore_stop=0.1,  # minimum exploration probability
-                 decay_rate=0.002,  # exponential decay rate for exploration prob
+                 explore_duration=1000000,  # num of steps to decay exploration prob
                  explore_test=0.01,  # exploration rate for test time
                  kernel_size=None,
                  stride=None,
@@ -35,7 +35,7 @@ class Hyperparameters(object):
         self.gamma = gamma
         self.explore_start = explore_start
         self.explore_stop = explore_stop
-        self.decay_rate = decay_rate
+        self.explore_duration = explore_duration
         self.explore_test = explore_test
         self.kernel_size = kernel_size
         self.stride = stride
@@ -125,10 +125,10 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for lr in [0.1, 0.01, 0.001, 0.0001, 0.00001]:
-        for env_id in ['Breakout-v0']:
-            hyper = Hyperparameters(learning_rate=lr)
-            exp = Experiment(id=idx_base, agent='dqn_gym', env_id=env_id, output_path='train_' + str(idx_base),
+    for lr in [0.01, 0.001, 0.0001, 0.00001, 0.000001]:
+        for bs in [32, 4096]:
+            hyper = Hyperparameters(learning_rate=lr, batch_size=bs)
+            exp = Experiment(id=idx_base, agent='dqn_gym', env_id='Breakout-v0', output_path='train_' + str(idx_base),
                              hyper=hyper)
 
             idx = exp_exists(exp, info)
