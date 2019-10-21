@@ -38,6 +38,12 @@ if FLAGS.agent == "a2c_gym":
     output_path = output_path + "a2c_gym/"
 
 
+if FLAGS.agent == "dqn_dm":
+    from agents.dqn_gym import experiments
+    from agents.dqn_gym.train import run
+    output_path = output_path + "dqn_dm/"
+
+
 def generate_experiments(id):
     # is is not used
     from runs import experiments as exp
@@ -52,7 +58,8 @@ def run_train(id):
 
 def find_id(id):
     from runs import find_id as find
-    return find.run(id)
+    opt = experiments.get_experiment(output_path, id)
+    find.run(opt)
 
 
 switcher = {
