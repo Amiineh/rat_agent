@@ -16,7 +16,7 @@ class Hyperparameters(object):
                  output_filters_conv=None,
                  hidden_size=512,  # number of units in each Q-network hidden layer
                  learning_rate=0.0001,  # Q-network learning rate
-                 memory_size=1000000,  # memory capacity
+                 memory_size=100000,  # memory capacity
                  batch_size=32,  # experience mini-batch size
                  pretrain_length=50000,  # number experiences to pretrain the memory
                  update_target_every=10000,  # target QN
@@ -125,9 +125,9 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for lr in [0.01, 0.001, 0.0001, 0.00001, 0.000001]:
-        for bs in [32, 4096]:
-            hyper = Hyperparameters(learning_rate=lr, batch_size=bs)
+    for eps in [1e6, 2e6, 4e6]:
+        for update_target in [5e3, 10e3, 20e3]:
+            hyper = Hyperparameters(learning_rate=0.00001, batch_size=32, explore_duration=eps, update_target_every=update_target)
             exp = Experiment(id=idx_base, agent='dqn_gym', env_id='Breakout-v0', output_path='train_' + str(idx_base),
                              hyper=hyper)
 
