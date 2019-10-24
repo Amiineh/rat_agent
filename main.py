@@ -15,7 +15,8 @@ FLAGS = parser.parse_args()
 output_path = {
     'amineh': '/Users/amineh.ahm/Desktop/Mice/code/rat_exp/',
     'om': '/om/user/amineh/rat_exp/',
-    'om2': '/om2/user/amineh/rat_exp/'}[FLAGS.host_filesystem]
+    'om2': '/om2/user/amineh/rat_exp/',
+    'vm': '/home/amineh/Shared/Desktop/Mice/code/rat_exp/'}[FLAGS.host_filesystem]
 
 if FLAGS.agent == "priint":
     from agents.priint import experiments
@@ -37,10 +38,9 @@ if FLAGS.agent == "a2c_gym":
     from agents.a2c_gym.train import run
     output_path = output_path + "a2c_gym/"
 
-
 if FLAGS.agent == "dqn_dm":
-    from agents.dqn_gym import experiments
-    from agents.dqn_gym.train import run
+    from agents.dqn_dm import experiments
+    from agents.dqn_dm.train import run
     output_path = output_path + "dqn_dm/"
 
 

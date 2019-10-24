@@ -52,7 +52,7 @@ class Hyperparameters(object):
 
 class Environment(object):
 
-    def __init__(self, name='Breakout-v0', state_size=None, action_size=4):
+    def __init__(self, name='Breakout-v4', state_size=None, action_size=4):
         if state_size is None:
             state_size = [84, 84, 4]
         self.name = name
@@ -125,21 +125,20 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for eps in [1e6, 2e6, 4e6]:
-        for update_target in [5e3, 10e3, 20e3]:
-            hyper = Hyperparameters(learning_rate=0.00001, batch_size=32, explore_duration=eps, update_target_every=update_target)
-            exp = Experiment(id=idx_base, agent='dqn_gym', env_id='Breakout-v0', output_path='train_' + str(idx_base),
-                             hyper=hyper)
+    for lr in [0.01, 0.001, 0.0001, 0.00001, 0.000001]:
+        hyper = Hyperparameters(learning_rate=lr, batch_size=32)
+        exp = Experiment(id=idx_base, agent='dqn_gym', env_id='Breakout-v4', output_path='train_' + str(idx_base),
+                         hyper=hyper)
 
-            idx = exp_exists(exp, info)
-            if idx is not False:
-                print("exp already exists with id", idx)
-                continue
+        idx = exp_exists(exp, info)
+        if idx is not False:
+            print("exp already exists with id", idx)
+            continue
 
-            s = json.loads(json.dumps(exp, default=lambda o: o.__dict__))
-            print(s)
-            info[str(idx_base)] = s
-            idx_base += 1
+        s = json.loads(json.dumps(exp, default=lambda o: o.__dict__))
+        print(s)
+        info[str(idx_base)] = s
+        idx_base += 1
 
     with open(info_path, 'w') as outfile:
         json.dump(info, outfile)

@@ -9,6 +9,8 @@ import os
 from os import listdir
 from os.path import isfile, join
 import gc
+import deepmind_lab
+from PIL import Image
 
 memory = Memory()
 
@@ -28,26 +30,22 @@ def get_last_step(path):
 
 def save_images(id_path, opt, sess, targetQN, env, save_steps=100, num_repeats=4):
     action = get_random_action()
-    done = None
     for step in range(save_steps):
         obs = [None for _ in range(num_repeats)]
 
         for rep in range(num_repeats):
-
             if not env.is_running():
-                env.reset()
+                break
 
-            obs[rep], reward, done, info = env.step(action)
-            img = Image.fromarray(obs[rep])
+            env.step(action)
+            obs[rep] = env.observations()['RGB_INTERLEAVED']
+            img = Image.fromarray(obs[rep]).convert('L')
             img_path = os.path.join(id_path, 'images')
             if not os.path.exists(img_path):
                 os.mkdir(img_path)
             img.save(img_path + '/action_' + str(step) + '_' + str(rep) + '.jpg', 'JPEG')
 
-            if done:
-                break
-
-        if done:
+        if not env.is_running():
             env.reset()
             action = get_random_action()
         else:
@@ -84,8 +82,23 @@ def eps_greedy(explore_p, sess, model, state):
     return action
 
 
+def _action(*entries):
+    return np.array(entries, dtype=np.intc)
+
+
+def map_to_dmlab(action_index):
+    DMLAB_ACTIONS = [_action(-20, 0, 0, 0, 0, 0, 0),
+                     _action(20, 0, 0, 0, 0, 0, 0),
+                     _action(0, 0, -1, 0, 0, 0, 0),
+                     _action(0, 0, 1, 0, 0, 0, 0),
+                     _action(0, 0, 0, 1, 0, 0, 0),
+                     _action(0, 0, 0, -1, 0, 0, 0)]
+
+    return DMLAB_ACTIONS[action_index]
+
+
 def get_random_action():
-    return random.randint(0, 3)
+    return random.randint(0, 5)
 
 
 def clip(reward):
@@ -98,21 +111,19 @@ def index_to_english(action):
 
 
 def env_step(env, action, num_repeats=4):
+    action = map_to_dmlab(action)
     R = 0.0
     obs = [None for _ in range(num_repeats)]
 
     for t in range(num_repeats):
-        obs[t], reward, done, info = env.step(action)
-        R += reward
-
-        if done:
+        if not env.is_running():
             env.reset()
+        reward = env.step(action)
+        R += reward
+        obs[t] = Image.fromarray(env.observations()['RGB_INTERLEAVED']).convert('L')  # greyscaling
 
     observations = np.stack(obs, axis=2)
-    next_state = env.observations()['RGB_INTERLEAVED']
-    # next_state = np.reshape(next_state, [-1])
-
-    return next_state, R, done
+    return observations, R, not env.is_running()
 
 
 def pretrain(env, opt):
@@ -169,6 +180,7 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
         episode_reward = 0
         num_episodes = last_episode
         for step in range(last_step, opt.hyper.max_steps):
+            print(step)
 
             # update target q network
             if step % opt.hyper.update_target_every == 0:
@@ -205,6 +217,7 @@ def train(env, state, opt, mainQN, targetQN, update_target_op, id_path):
                       '\nmemory len: {}'.format(len(memory.buffer)))
                 sys.stdout.flush()
                 episode_reward = 0
+                save_images(id_path, opt, sess, targetQN, env)
 
             else:
                 state = next_state
@@ -264,4 +277,3 @@ def run(opt, id_path):
     state = pretrain(env, opt)
     gc.collect()
     train(env, state, opt, mainQN, targetQN, update_target_op, id_path)
-

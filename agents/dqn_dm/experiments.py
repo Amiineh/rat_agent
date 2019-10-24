@@ -52,7 +52,7 @@ class Hyperparameters(object):
 
 class Environment(object):
 
-    def __init__(self, name='Sound', state_size=None, action_size=4, fps=60):
+    def __init__(self, name='sound_task_zero', state_size=None, action_size=4, fps=60):
         if state_size is None:
             state_size = [84, 84, 4]
         self.name = name
@@ -128,7 +128,7 @@ def generate_experiments(output_path):
 
     for lr in [0.1]:
         hyper = Hyperparameters(learning_rate=lr)
-        exp = Experiment(id=idx_base, agent='dqn_dm', env_id='Sound', output_path='train_' + str(idx_base),
+        exp = Experiment(id=idx_base, agent='dqn_dm', env_id='sound_task_zero', output_path='train_' + str(idx_base),
                          hyper=hyper)
 
         idx = exp_exists(exp, info)
