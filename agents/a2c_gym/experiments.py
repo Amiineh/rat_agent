@@ -8,7 +8,8 @@ class Hyperparameters(object):
                  max_steps=5000,  # max steps in an episode
                  train_episodes=10000,  # max number of episodes
                  gamma=0.99,  # future reward discount
-                 n=20,  # n-step updating
+                 nsteps=20,  # n-step updating
+                 nenvs=4,  # number of environment copies simulated in parallel
                  entropy_reg_term=1,  # regularization term for entropy
                  normalise_entropy=False,
                  # when true normalizes entropy to be in [-1, 0] to be more invariant to different size action spaces
@@ -22,6 +23,15 @@ class Hyperparameters(object):
                  batch_size=32,  # experience mini-batch size
                  num_envs=32,
                  save_log=100,  # save
+
+                 # baselines:
+                 ent_coef=0.01,
+                 vf_coef=0.5,
+                 max_grad_norm=0.5,
+                 alpha=0.99,
+                 epsilon=1e-5,
+                 total_timesteps=int(80e6),
+                 lrschedule='linear',
                  ):
 
         if output_filters_conv is None:
@@ -34,7 +44,7 @@ class Hyperparameters(object):
         self.max_steps = max_steps
         self.train_episodes = train_episodes
         self.gamma = gamma
-        self.n = n
+        self.nsteps = nsteps
         self.entropy_reg_term = entropy_reg_term
         self.normalise_entropy = normalise_entropy
         self.kernel_size = kernel_size
@@ -46,6 +56,14 @@ class Hyperparameters(object):
         self.batch_size = batch_size
         self.num_envs = num_envs
         self.save_log = save_log
+
+        self.ent_coef = ent_coef
+        self.vf_coef = vf_coef
+        self.max_grad_norm = max_grad_norm
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.total_timesteps = total_timesteps
+        self.lrschedule = lrschedule
 
 
 class Environment(object):

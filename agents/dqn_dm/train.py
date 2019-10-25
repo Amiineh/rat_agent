@@ -111,19 +111,23 @@ def index_to_english(action):
 
 
 def env_step(env, action, num_repeats=4):
+    # print(index_to_english(action))
     action = map_to_dmlab(action)
     R = 0.0
     obs = [None for _ in range(num_repeats)]
+    done = False
 
     for t in range(num_repeats):
         if not env.is_running():
+            print("env is not running")
             env.reset()
+            done = True
         reward = env.step(action)
         R += reward
         obs[t] = Image.fromarray(env.observations()['RGB_INTERLEAVED']).convert('L')  # greyscaling
 
     observations = np.stack(obs, axis=2)
-    return observations, R, not env.is_running()
+    return observations, R, done
 
 
 def pretrain(env, opt):

@@ -10,6 +10,8 @@ import os
 from os import listdir
 from os.path import isfile, join
 from multiprocessing import Process, Queue, Pipe
+from agents.a2c_gym.network import learn
+
 
 
 def get_last_ep(path):
@@ -219,7 +221,6 @@ def train(opt, mainA2C, id_path):
     sys.stdout.flush()
     saver = tf.train.Saver(max_to_keep=2, keep_checkpoint_every_n_hours=1)
 
-    # TODO: this is not used right now. Discount rewards
     # Initialization
     envs_list = [deepmind_lab.Lab(level, ['RGB_INTERLEAVED'], config=config)] * num_envs
     envs_list = map(reset_envs, envs_list)
@@ -327,6 +328,42 @@ def train(opt, mainA2C, id_path):
 
 def run(opt, id_path):
     tf.reset_default_graph()
-    mainA2C = ActorCriticNetwork(name='main_a2c', opt=opt)
-    train(opt, mainA2C, id_path)
+    model = learn(
+        env=opt.env.name,
+        total_timesteps=opt.hyper.total_timesteps,
+        # todo: possible args
+        #  **alg_kwargs
+    )
+
+
+    obs = env.reset()
+    state = model.initial_state if hasattr(model, 'initial_state') else None
+    dones = np.zeros((1,))
+
+    episode_rew = 0
+    while True:
+        if state is not None:
+            actions, _, state, _ = model.step(obs, S=state, M=dones)
+        else:
+            actions, _, _, _ = model.step(obs)
+
+        obs, rew, done, _ = env.step(actions)
+        episode_rew += rew[0] if isinstance(env, VecEnv) else rew
+        env.render()
+        done = done.any() if isinstance(done, np.ndarray) else done
+        if done:
+            print('episode_rew={}'.format(episode_rew))
+            episode_rew = 0
+            obs = env.reset()
+
+
+
+
+
+
+
+
+
+
+
 
