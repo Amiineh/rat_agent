@@ -9,14 +9,14 @@ class Hyperparameters(object):
                  gamma=0.99,  # future reward discount
                  explore_start=1.0,  # exploration probability at start
                  explore_stop=0.1,  # minimum exploration probability
-                 decay_rate=0.002,  # exponential decay rate for exploration prob
+                 explore_duration=1000000,  # num of steps to decay exploration prob
                  explore_test=0.01,  # exploration rate for test time
                  kernel_size=None,
                  stride=None,
                  output_filters_conv=None,
                  hidden_size=512,  # number of units in each Q-network hidden layer
                  learning_rate=0.0001,  # Q-network learning rate
-                 memory_size=1000000,  # memory capacity
+                 memory_size=100000,  # memory capacity
                  batch_size=32,  # experience mini-batch size
                  pretrain_length=50000,  # number experiences to pretrain the memory
                  update_target_every=10000,  # target QN
@@ -35,7 +35,7 @@ class Hyperparameters(object):
         self.gamma = gamma
         self.explore_start = explore_start
         self.explore_stop = explore_stop
-        self.decay_rate = decay_rate
+        self.explore_duration = explore_duration
         self.explore_test = explore_test
         self.kernel_size = kernel_size
         self.stride = stride
@@ -52,7 +52,7 @@ class Hyperparameters(object):
 
 class Environment(object):
 
-    def __init__(self, name='Breakout-v0', state_size=None, action_size=4):
+    def __init__(self, name='Breakout-v4', state_size=None, action_size=4):
         if state_size is None:
             state_size = [84, 84, 4]
         self.name = name
@@ -125,21 +125,20 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for lr in [0.1, 0.01, 0.001, 0.0001, 0.00001]:
-        for env_id in ['Breakout-v0']:
-            hyper = Hyperparameters(learning_rate=lr)
-            exp = Experiment(id=idx_base, agent='dqn_gym', env_id=env_id, output_path='train_' + str(idx_base),
-                             hyper=hyper)
+    for lr in [0.01, 0.001, 0.0001, 0.00001, 0.000001]:
+        hyper = Hyperparameters(learning_rate=lr, batch_size=32)
+        exp = Experiment(id=idx_base, agent='dqn_gym', env_id='Breakout-v4', output_path='train_' + str(idx_base),
+                         hyper=hyper)
 
-            idx = exp_exists(exp, info)
-            if idx is not False:
-                print("exp already exists with id", idx)
-                continue
+        idx = exp_exists(exp, info)
+        if idx is not False:
+            print("exp already exists with id", idx)
+            continue
 
-            s = json.loads(json.dumps(exp, default=lambda o: o.__dict__))
-            print(s)
-            info[str(idx_base)] = s
-            idx_base += 1
+        s = json.loads(json.dumps(exp, default=lambda o: o.__dict__))
+        print(s)
+        info[str(idx_base)] = s
+        idx_base += 1
 
     with open(info_path, 'w') as outfile:
         json.dump(info, outfile)

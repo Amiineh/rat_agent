@@ -12,10 +12,7 @@ class Hyperparameters(object):
                  entropy_reg_term=1,  # regularization term for entropy
                  normalise_entropy=False,
                  # when true normalizes entropy to be in [-1, 0] to be more invariant to different size action spaces
-                 explore_start=1.0,  # exploration probability at start
-                 explore_stop=0.1,  # minimum exploration probability
-                 decay_rate=0.002,  # exponential decay rate for exploration prob
-                 explore_test=0.01,  # exploration rate for test time
+
                  kernel_size=None,
                  stride=None,
                  output_filters_conv=None,
@@ -40,10 +37,6 @@ class Hyperparameters(object):
         self.n = n
         self.entropy_reg_term = entropy_reg_term
         self.normalise_entropy = normalise_entropy
-        self.explore_start = explore_start
-        self.explore_stop = explore_stop
-        self.decay_rate = decay_rate
-        self.explore_test = explore_test
         self.kernel_size = kernel_size
         self.stride = stride
         self.output_filters_conv = output_filters_conv
@@ -133,7 +126,7 @@ def generate_experiments(output_path):
     for lr in [0.1, 0.01, 0.001, 0.0001, 0.00001]:
         for env_id in ['Breakout-v0']:
             hyper = Hyperparameters(learning_rate=lr)
-            exp = Experiment(id=idx_base, agent='dqn_gym', env_id=env_id, output_path='train_' + str(idx_base),
+            exp = Experiment(id=idx_base, agent='a2c_gym', env_id=env_id, output_path='train_' + str(idx_base),
                              hyper=hyper)
 
             idx = exp_exists(exp, info)

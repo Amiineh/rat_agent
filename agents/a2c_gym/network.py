@@ -1,4 +1,5 @@
 import tensorflow as tf
+from agents.a2c_gym.distributions import fc, make_pdtype
 
 
 class ActorCriticNetwork:
@@ -27,28 +28,61 @@ class ActorCriticNetwork:
 
             self.action_output = tf.squeeze(tf.multinomial(logits=self.policy_logits, num_samples=1), axis=1)
 
-            # todo:
-            self.rewards = tf.placeholder(tf.float32, [opt.hyper.n, opt.hyper.num_envs], name="rewards")
-            self.discounts = tf.placeholder(tf.float32, [opt.hyper.n, opt.hyper.num_envs], name="discounts")
-            self.initial_Rs = tf.placeholder(tf.float32, [opt.hyper.num_envs], name="initial_Rs")
+            # Calculate the loss
+            # Total loss = Policy gradient loss - entropy * entropy coefficient + Value coefficient * value loss
 
-            # Used for trfl stuff
-            self.value_output_unflat = tf.reshape(self.value_output, [opt.hyper.n, opt.hyper.num_envs])
-            self.policy_logits_unflat = tf.reshape(self.policy_logits, [opt.hyper.n, opt.hyper.num_envs, -1])
-            a2c_loss, extra = trfl.sequence_advantage_actor_critic_loss(
-                policy_logits=self.policy_logits_unflat,
-                baseline_values=self.value_output_unflat,
-                actions=self.actions_,
-                rewards=self.rewards,
-                pcontinues=self.discounts,
-                bootstrap_value=self.initial_Rs,
-                entropy_cost=entropy_reg_term,
-                normalise_entropy=normalise_entropy)
-            self.loss = tf.reduce_mean(a2c_loss)
-            self.extra = extra
-            self.train_op = tf.train.RMSPropOptimizer(opt.hyper.learning_rate).minimize(self.loss)
+            # Policy loss
+            self.neglogpac = train_model.pd.neglogp(A)
+            # L = A(s,a) * -logpi(a|s)
+            pg_loss = tf.reduce_mean(ADV * neglogpac)
+
+            # Entropy is used to improve exploration by limiting the premature convergence to suboptimal policy.
+            entropy = tf.reduce_mean(train_model.pd.entropy())
+
+            # Value loss
+            vf_loss = losses.mean_squared_error(tf.squeeze(train_model.vf), R)
+
+            loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
+
+            # Update parameters using loss
+            # 1. Get the model parameters
+            params = find_trainable_variables("a2c_model")
+
+            # 2. Calculate the gradients
+            grads = tf.gradients(loss, params)
+            if max_grad_norm is not None:
+                # Clip the gradients (normalize)
+                grads, grad_norm = tf.clip_by_global_norm(grads, max_grad_norm)
+            grads = list(zip(grads, params))
+            # zip aggregate each gradient with parameters associated
+            # For instance zip(ABCD, xyza) => Ax, By, Cz, Da
+
+            # 3. Make op for one policy and value update step of A2C
+            self.optimizer = tf.train.RMSPropOptimizer(learning_rate=opt.hyper.learning_rate, decay=alpha, epsilon=epsilon)
+
+            self.train_op = self.optimizer.apply_gradients(grads)
 
             tf.summary.scalar('loss', self.loss)
 
             self.reward_summary = tf.placeholder(tf.float32, name='reward_summary')
             tf.summary.scalar('reward', self.reward_summary)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
