@@ -18,10 +18,18 @@ class Hyperparameters(object):
                  output_filters_conv=None,
                  hidden_size=256,  # number of units in each Q-network hidden layer
                  learning_rate=0.0001,  # Q-network learning rate
-                 memory_size=1000000,  # memory capacity
                  batch_size=32,  # experience mini-batch size
-                 num_envs=32,
                  save_log=100,  # save
+
+                 num_env=None,
+                 gamestate=None,
+                 reward_scale=1.0,
+                 num_timesteps=1e6,
+                 save_video_interval=0,  # Save video every x steps (0 = disabled)
+                 save_video_length=200,  # Length of recorded video
+                 network='cnn',
+                 play=False,
+                 seed=None,
                  ):
 
         if output_filters_conv is None:
@@ -42,10 +50,17 @@ class Hyperparameters(object):
         self.output_filters_conv = output_filters_conv
         self.hidden_size = hidden_size
         self.learning_rate = learning_rate
-        self.memory_size = memory_size
         self.batch_size = batch_size
-        self.num_envs = num_envs
+        self.num_env = num_env
         self.save_log = save_log
+        self.gamestate = gamestate
+        self.reward_scale = reward_scale
+        self.num_timesteps = num_timesteps
+        self.save_video_interval = save_video_interval
+        self.save_video_length = save_video_length
+        self.network = network
+        self.play = play
+        self.seed = seed
 
 
 class Environment(object):
@@ -123,8 +138,8 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for lr in [0.1, 0.01, 0.001, 0.0001, 0.00001]:
-        for env_id in ['Breakout-v0']:
+    for lr in [0.1, 0.01, 0.001, 0.0001]:
+        for env_id in ['BreakoutNoFrameskip-v4']:
             hyper = Hyperparameters(learning_rate=lr)
             exp = Experiment(id=idx_base, agent='a2c_gym', env_id=env_id, output_path='train_' + str(idx_base),
                              hyper=hyper)
