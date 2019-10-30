@@ -111,10 +111,16 @@ def find_id(id):
     find.run(opt)
 
 
+def remove_id(id):
+    from runs import remove_id as remove
+    remove.run(id, output_path)
+
+
 switcher = {
     'train': run_train,
     'find_id': find_id,
     'gen': generate_experiments,
+    'remove': remove_id,
 }
 
 

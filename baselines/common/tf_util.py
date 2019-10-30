@@ -343,7 +343,7 @@ def save_state(fname, sess=None):
 # TODO: ensure there is no subtle differences and remove one
 
 def save_variables(save_path, variables=None, sess=None):
-    import joblib
+    import pickle
     sess = sess or get_session()
     variables = variables or tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
@@ -352,14 +352,15 @@ def save_variables(save_path, variables=None, sess=None):
     dirname = os.path.dirname(save_path)
     if any(dirname):
         os.makedirs(dirname, exist_ok=True)
-    joblib.dump(save_dict, save_path)
+    pickle.dump(save_dict, open(save_path+'/save.pkl', 'wb'))
 
 def load_variables(load_path, variables=None, sess=None):
-    import joblib
+    print("Restored parameters")
+    import pickle
     sess = sess or get_session()
     variables = variables or tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
-    loaded_params = joblib.load(os.path.expanduser(load_path))
+    loaded_params = pickle.load(open(os.path.expanduser(load_path+'/save.pkl'), 'rb'))
     restores = []
     if isinstance(loaded_params, list):
         assert len(loaded_params) == len(variables), 'number of variables loaded mismatches len(variables)'

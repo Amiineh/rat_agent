@@ -5,52 +5,22 @@ import os
 class Hyperparameters(object):
 
     def __init__(self,
-                 max_steps=5000,  # max steps in an episode
-                 train_episodes=10000,  # max number of episodes
-                 gamma=0.99,  # future reward discount
-                 n=20,  # n-step updating
-                 entropy_reg_term=1,  # regularization term for entropy
-                 normalise_entropy=False,
-                 # when true normalizes entropy to be in [-1, 0] to be more invariant to different size action spaces
-
-                 kernel_size=None,
-                 stride=None,
-                 output_filters_conv=None,
-                 hidden_size=256,  # number of units in each Q-network hidden layer
                  learning_rate=0.0001,  # Q-network learning rate
-                 batch_size=32,  # experience mini-batch size
-                 save_log=100,  # save
-
-                 num_env=None,
+                 nsteps=20,  # n-step updating
+                 num_env=16,  # number of parallel agents (cpus)
                  gamestate=None,
                  reward_scale=1.0,
-                 num_timesteps=1e6,
+                 num_timesteps=50e6,
+                 save_log=100,  # save
                  save_video_interval=0,  # Save video every x steps (0 = disabled)
                  save_video_length=200,  # Length of recorded video
-                 network='cnn',
+                 network='cnn',  # network type (mlp, cnn, lstm, cnn_lstm, conv_only)
                  play=False,
                  seed=None,
                  ):
 
-        if output_filters_conv is None:
-            output_filters_conv = [16, 32]
-        if kernel_size is None:
-            kernel_size = [8, 4]
-        if stride is None:
-            stride = [4, 2]
-
-        self.max_steps = max_steps
-        self.train_episodes = train_episodes
-        self.gamma = gamma
-        self.n = n
-        self.entropy_reg_term = entropy_reg_term
-        self.normalise_entropy = normalise_entropy
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.output_filters_conv = output_filters_conv
-        self.hidden_size = hidden_size
         self.learning_rate = learning_rate
-        self.batch_size = batch_size
+        self.nsteps = nsteps
         self.num_env = num_env
         self.save_log = save_log
         self.gamestate = gamestate
@@ -65,7 +35,7 @@ class Hyperparameters(object):
 
 class Environment(object):
 
-    def __init__(self, name='Breakout-v0', state_size=None, action_size=4):
+    def __init__(self, name='Breakout-v4', state_size=None, action_size=4):
         if state_size is None:
             state_size = [84, 84, 4]
         self.name = name
@@ -138,7 +108,7 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for lr in [0.1, 0.01, 0.001, 0.0001]:
+    for lr in [0.01, 0.001, 0.0001, 0.00001, 0.000001]:
         for env_id in ['BreakoutNoFrameskip-v4']:
             hyper = Hyperparameters(learning_rate=lr)
             exp = Experiment(id=idx_base, agent='a2c_gym', env_id=env_id, output_path='train_' + str(idx_base),

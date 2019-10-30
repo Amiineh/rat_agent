@@ -13,6 +13,8 @@ from baselines.common.cmd_util import common_arg_parser, parse_unknown_args, mak
 from baselines.common.tf_util import get_session
 from baselines import logger
 from importlib import import_module
+from PIL import Image
+import os
 
 try:
     from mpi4py import MPI
@@ -50,7 +52,7 @@ _game_envs['retro'] = {
 }
 
 
-def train(opt, env):
+def train(opt, env, id_path):
     env_type, env_id = get_env_type(opt)
     # print('env_type: {}'.format(env_type))
 
@@ -74,10 +76,15 @@ def train(opt, env):
 
     print('Training {} on {}:{} with arguments \n{}'.format('a2c', env_type, env_id, alg_kwargs))
 
+    load_path = None
+    if osp.isfile(id_path+'/save.pkl'):
+        load_path = id_path
     model = learn(
         env=env,
         seed=seed,
+        nsteps=opt.hyper.nsteps,
         total_timesteps=total_timesteps,
+        load_path=load_path,
         **alg_kwargs
     )
 
@@ -180,6 +187,39 @@ def configure_logger(log_path, **kwargs):
         logger.configure(**kwargs)
 
 
+def save_images(id_path, opt, model, env):
+    logger.log("Saving images")
+    obs = env.reset()
+
+    state = model.initial_state if hasattr(model, 'initial_state') else None
+    dones = np.zeros((1,))
+
+    episode_rew = 0
+    episode = 0
+    for step in range(opt.hyper.save_video_length):
+        if state is not None:
+            actions, _, state, _ = model.step(obs, S=state, M=dones)
+        else:
+            actions, _, _, _ = model.step(obs)
+
+        obs, rew, done, _ = env.step(actions)
+        episode_rew += rew[0] if isinstance(env, VecEnv) else rew
+
+        for rep in range(4):
+            img = Image.fromarray(obs[0, :, :, rep])
+            img_path = os.path.join(id_path, 'images')
+            if not os.path.exists(img_path):
+                os.mkdir(img_path)
+            img.save(img_path + '/ep_' + str(episode) + '_step_' + str(step) + '.jpg', 'JPEG')
+
+        done = done.any() if isinstance(done, np.ndarray) else done
+        if done:
+            print('episode {}, episode_rew={}'.format(episode, episode_rew))
+            episode_rew = 0
+            episode += 1
+            obs = env.reset()
+
+
 def run(opt, id_path, env):
     # configure logger, disable logging in child MPI processes (with rank > 0)
 
@@ -194,10 +234,12 @@ def run(opt, id_path, env):
         rank = MPI.COMM_WORLD.Get_rank()
         configure_logger(id_path, format_strs=[])
 
-    model = train(opt, env)
+    model = train(opt, env, id_path)
 
     save_path = osp.expanduser(id_path)
     model.save(save_path)
+
+    save_images(id_path, opt, model, env)
 
     if opt.hyper.play:
         logger.log("Running trained model")

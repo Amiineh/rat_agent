@@ -131,6 +131,7 @@ def learn(
     alpha=0.99,
     gamma=0.99,
     log_interval=100,
+    save_interval=125000,
     load_path=None,
     **network_kwargs):
 
@@ -228,5 +229,9 @@ def learn(
             logger.record_tabular("eprewmean", safemean([epinfo['r'] for epinfo in epinfobuf]))
             logger.record_tabular("eplenmean", safemean([epinfo['l'] for epinfo in epinfobuf]))
             logger.dump_tabular()
+
+        # if update % save_interval == 0:
+
+
     return model
 
