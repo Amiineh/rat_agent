@@ -7,15 +7,14 @@ class Hyperparameters(object):
     def __init__(self,
                  learning_rate=0.0001,  # Q-network learning rate
                  nsteps=20,  # n-step updating
-                 num_env=16,  # number of parallel agents (cpus)
+                 num_env=2,  # number of parallel agents (cpus)
                  gamestate=None,
                  reward_scale=1.0,
-                 num_timesteps=50e6,
-                 save_interval=1000,  # save
+                 num_timesteps=1000,
+                 save_interval=100,  # save
                  save_video_interval=0,  # Save video every x steps (0 = disabled)
                  save_video_length=200,  # Length of recorded video
                  network='cnn',  # network type (mlp, cnn, lstm, cnn_lstm, conv_only)
-                 play=False,
                  seed=None,
                  ):
 
@@ -29,19 +28,19 @@ class Hyperparameters(object):
         self.save_video_interval = save_video_interval
         self.save_video_length = save_video_length
         self.network = network
-        self.play = play
         self.seed = seed
 
 
 class Environment(object):
-
-    def __init__(self, name='Breakout-v4', state_size=None, action_size=4, type='atari'):
+# todo: check action size
+    def __init__(self, name='DeepmindLabSoundTaskZero-v0', state_size=None, action_size=6, type='dmlab', fps=60):
         if state_size is None:
             state_size = [84, 84, 4]
         self.name = name
         self.state_size = state_size  # image size
         self.action_size = action_size
         self.type = type
+        self.fps = fps
 
 
 class Experiment(object):
@@ -109,10 +108,10 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for lr in [0.01, 0.001, 0.0001, 0.00001, 0.000001]:
-        for env_id in ['BreakoutNoFrameskip-v4']:
+    for lr in [0.01]:
+        for env_id in ['DeepmindLabSoundTaskZero-v0']:
             hyper = Hyperparameters(learning_rate=lr)
-            exp = Experiment(id=idx_base, agent='a2c_gym', env_id=env_id, output_path='train_' + str(idx_base),
+            exp = Experiment(id=idx_base, agent='a2c_dm', env_id=env_id, output_path='train_' + str(idx_base),
                              hyper=hyper)
 
             idx = exp_exists(exp, info)

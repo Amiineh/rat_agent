@@ -1,5 +1,5 @@
 from baselines.common import plot_util as pu
-results = pu.load_results('/Users/amineh.ahm/Desktop/Mice/code/rat_exp/a2c_gym 3/train_17')
+results = pu.load_results('/Users/amineh.ahm/Desktop/Mice/code/rat_exp/a2c_gym 4/train_22')
 
 import matplotlib.pyplot as plt
 import numpy as np

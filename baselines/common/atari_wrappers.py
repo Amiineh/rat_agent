@@ -272,6 +272,15 @@ def make_atari(env_id, max_episode_steps=None):
         env = TimeLimit(env, max_episode_steps=max_episode_steps)
     return env
 
+def make_dmlab(env_id, opt, max_episode_steps=None):
+    import gym_deepmindlab
+    env = gym.make(env_id, width=opt.env.state_size[0], height=opt.env.state_size[1])
+    env = NoopResetEnv(env, noop_max=30)
+    env = MaxAndSkipEnv(env, skip=4)
+    if max_episode_steps is not None:
+        env = TimeLimit(env, max_episode_steps=max_episode_steps)
+    return env
+
 def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=False, scale=False):
     """Configure environment for DeepMind-style Atari.
     """

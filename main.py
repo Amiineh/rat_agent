@@ -3,10 +3,8 @@ os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
 import argparse
 import multiprocessing
-import os.path as osp
-from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
-from baselines.common.vec_env import VecFrameStack, VecNormalize, VecEnv
-from baselines.common.cmd_util import common_arg_parser, parse_unknown_args, make_vec_env, make_env
+from baselines.common.vec_env import VecFrameStack
+from baselines.common.cmd_util import make_vec_env
 import sys
 from baselines import logger
 
@@ -40,16 +38,20 @@ if FLAGS.agent == "dqn_gym":
     from agents.dqn_gym.train import run
     output_path = output_path + "dqn_gym/"
 
+if FLAGS.agent == "dqn_dm":
+    from agents.dqn_dm import experiments
+    from agents.dqn_dm.train import run
+    output_path = output_path + "dqn_dm/"
+
 if FLAGS.agent == "a2c_gym":
     from agents.a2c_gym import experiments
     from agents.a2c_gym.train import run
     output_path = output_path + "a2c_gym/"
 
-
-if FLAGS.agent == "dqn_dm":
-    from agents.dqn_dm import experiments
-    from agents.dqn_dm.train import run
-    output_path = output_path + "dqn_dm/"
+if FLAGS.agent == "a2c_dm":
+    from agents.a2c_dm import experiments
+    from agents.a2c_dm.train import run
+    output_path = output_path + "a2c_dm/"
 
 
 def generate_experiments(id):
@@ -69,7 +71,7 @@ def run_train(id):
             logger.configure(**kwargs)
 
     def get_env_type(opt):
-        env_type = 'atari'
+        env_type = opt.env.type
         env_id = opt.env.name
         return env_type, env_id
 
@@ -81,26 +83,19 @@ def run_train(id):
         print("num environments: ", nenv)
 
         env_type, env_id = get_env_type(opt)
-
         frame_stack_size = 4
         configure_logger(id_path)
-        env = make_vec_env(env_id, env_type='atari', num_env=nenv, seed=seed, gamestate=opt.hyper.gamestate,
-                           reward_scale=opt.hyper.reward_scale)
+        env = make_vec_env(env_id, env_type=env_type, num_env=nenv, seed=seed, gamestate=opt.hyper.gamestate,
+                           reward_scale=opt.hyper.reward_scale, opt=opt)
         env = VecFrameStack(env, frame_stack_size)
         return env
 
-    if opt.agent == "a2c_gym":
+    if opt.agent == "a2c_gym" or opt.agent == "a2c_dm":
         id_path = output_path + opt.output_path
-
         env_type, env_id = get_env_type(opt)
         print('env_type: {}'.format(env_type))
         env = build_env(opt)
-        if opt.hyper.save_video_interval != 0:
-            env = VecVideoRecorder(env, osp.join(id_path, "videos"),
-                                   record_video_trigger=lambda x: x % opt.hyper.save_video_interval == 0,
-                                   video_length=opt.hyper.save_video_length)
-        from agents.a2c_gym.train import run as a2c_run
-        a2c_run(opt, id_path, env)
+        run(opt, id_path, env)
     else:
         train.run(opt, output_path, run)
 

@@ -133,6 +133,7 @@ def learn(
     log_interval=100,
     save_interval=125000,
     load_path=None,
+    save_path=None,
     **network_kwargs):
 
     '''
@@ -230,8 +231,9 @@ def learn(
             logger.record_tabular("eplenmean", safemean([epinfo['l'] for epinfo in epinfobuf]))
             logger.dump_tabular()
 
-        # if update % save_interval == 0:
-
+        if update % save_interval == 0:
+            print("saving model")
+            model.save(save_path)
 
     return model
 
