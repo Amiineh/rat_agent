@@ -21,7 +21,7 @@ output_path = {
     'amineh': '/Users/amineh.ahm/Desktop/Mice/code/rat_exp/',
     'om': '/om/user/amineh/rat_exp/',
     'om2': '/om2/user/amineh/rat_exp/',
-    'vm': '/home/amineh/Shared/Desktop/Mice/code/rat_exp/'}[FLAGS.host_filesystem]
+    'vm': '/home/amineh/Shared/Mice/code/rat_exp/'}[FLAGS.host_filesystem]
 
 if FLAGS.agent == "priint":
     from agents.priint import experiments
@@ -51,7 +51,12 @@ if FLAGS.agent == "a2c_gym":
 if FLAGS.agent == "a2c_dm":
     from agents.a2c_dm import experiments
     from agents.a2c_dm.train import run
-    output_path = output_path + "a2c_dm/"
+    output_path = output_path + "a2c_dm_scratch/"
+
+if FLAGS.agent == "acer_gym":
+    from agents.acer_gym import experiments
+    from agents.acer_gym.train import run
+    output_path = output_path + "acer_gym/"
 
 
 def generate_experiments(id):
@@ -87,10 +92,10 @@ def run_train(id):
         configure_logger(id_path)
         env = make_vec_env(env_id, env_type=env_type, num_env=nenv, seed=seed, gamestate=opt.hyper.gamestate,
                            reward_scale=opt.hyper.reward_scale, opt=opt)
-        env = VecFrameStack(env, frame_stack_size)
+        env = VecFrameStack(env, frame_stack_size+2)    # one channel for sound, one for distractor
         return env
 
-    if opt.agent == "a2c_gym" or opt.agent == "a2c_dm":
+    if opt.agent == "a2c_gym" or opt.agent == "a2c_dm" or opt.agent == "acer_gym":
         id_path = output_path + opt.output_path
         env_type, env_id = get_env_type(opt)
         print('env_type: {}'.format(env_type))

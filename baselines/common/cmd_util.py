@@ -9,7 +9,6 @@ except ImportError:
     MPI = None
 
 import gym
-from gym.wrappers import FlattenDictWrapper
 from baselines import logger
 from baselines.bench import Monitor
 from baselines.common import set_global_seeds
@@ -80,11 +79,12 @@ def make_env(env_id, env_type, mpi_rank=0, subrank=0, seed=None, reward_scale=1.
         gamestate = gamestate or retro.State.DEFAULT
         env = retro_wrappers.make_retro(game=env_id, max_episode_steps=10000, use_restricted_actions=retro.Actions.DISCRETE, state=gamestate)
     elif env_type == 'dmlab':
-        env = make_dmlab(env_id, opt)
+        env = make_dmlab(env_id, opt, subrank)
     else:
         env = gym.make(env_id, **env_kwargs)
 
     if flatten_dict_observations and isinstance(env.observation_space, gym.spaces.Dict):
+        from gym.wrappers import FlattenDictWrapper
         keys = env.observation_space.spaces.keys()
         env = gym.wrappers.FlattenDictWrapper(env, dict_keys=list(keys))
 
@@ -100,11 +100,7 @@ def make_env(env_id, env_type, mpi_rank=0, subrank=0, seed=None, reward_scale=1.
             wrapper_kwargs['frame_stack'] = 1
         env = retro_wrappers.wrap_deepmind_retro(env, **wrapper_kwargs)
     elif env_type == 'dmlab':
-        # todo do we need to add anything here?!
-        #  * resizing is being done in config
-        #  * black and white should be done later
-        #  * reward clipping
-        pass
+        env = wrap_deepmind(env, **wrapper_kwargs)
 
     if isinstance(env.action_space, gym.spaces.Box):
         env = ClipActionsWrapper(env)

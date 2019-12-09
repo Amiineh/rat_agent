@@ -112,7 +112,7 @@ def generate_experiments(output_path):
     for lr in [0.01, 0.001, 0.0001, 0.00001, 0.000001]:
         for env_id in ['BreakoutNoFrameskip-v4']:
             hyper = Hyperparameters(learning_rate=lr)
-            exp = Experiment(id=idx_base, agent='a2c_gym', env_id=env_id, output_path='train_' + str(idx_base),
+            exp = Experiment(id=idx_base, agent='acer_gym', env_id=env_id, output_path='train_' + str(idx_base),
                              hyper=hyper)
 
             idx = exp_exists(exp, info)

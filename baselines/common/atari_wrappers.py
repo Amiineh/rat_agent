@@ -7,6 +7,7 @@ from gym import spaces
 import cv2
 cv2.ocl.setUseOpenCL(False)
 from .wrappers import TimeLimit
+import json
 
 
 class NoopResetEnv(gym.Wrapper):
@@ -72,7 +73,10 @@ class EpisodicLifeEnv(gym.Wrapper):
         self.was_real_done = done
         # check current lives, make loss of life terminal,
         # then update lives to handle bonus lives
-        lives = self.env.unwrapped.ale.lives()
+        if isinstance(self.env.action_space, gym.spaces.Box):
+            lives = self.env.unwrapped.ale.lives()
+        else:
+            lives = self.lives
         if lives < self.lives and lives > 0:
             # for Qbert sometimes we stay in lives == 0 condition for a few frames
             # so it's important to keep lives > 0, so that we only reset once
@@ -91,7 +95,8 @@ class EpisodicLifeEnv(gym.Wrapper):
         else:
             # no-op step to advance from terminal/lost life state
             obs, _, _, _ = self.env.step(0)
-        self.lives = self.env.unwrapped.ale.lives()
+        if isinstance(self.env.action_space, gym.spaces.Box):
+            self.lives = self.env.unwrapped.ale.lives()
         return obs
 
 class MaxAndSkipEnv(gym.Wrapper):
@@ -263,6 +268,76 @@ class LazyFrames(object):
     def frame(self, i):
         return self._force()[..., i]
 
+
+class AppendSound(gym.ObservationWrapper):
+    def __init__(self, env, width=84, height=84, grayscale=True, dict_space_key=None):
+        """
+        Warp frames to 84x84 as done in the Nature paper and later work.
+
+        If the environment uses dictionary observations, `dict_space_key` can be specified which indicates which
+        observation should be warped.
+        """
+        super().__init__(env)
+        self._width = width
+        self._height = height
+        self._grayscale = grayscale
+        self._key = dict_space_key
+        if self._grayscale:
+            num_colors = 1
+        else:
+            num_colors = 3
+
+        new_space = gym.spaces.Box(
+            low=0,
+            high=255,
+            shape=(self._height, self._width, num_colors),
+            dtype=np.uint8,
+        )
+        if self._key is None:
+            original_space = self.observation_space
+            self.observation_space = new_space
+        else:
+            original_space = self.observation_space.spaces[self._key]
+            self.observation_space.spaces[self._key] = new_space
+        assert original_space.dtype == np.uint8 and len(original_space.shape) == 3
+
+    def observation(self, obs):
+        try:
+            instr = obs['INSTR']
+        except:
+            return
+        if instr:
+            instr = json.loads(instr)
+            for command_idx in range(1, instr['nCommands'] + 1):
+                command = instr['Command' + str(command_idx)]['Command']
+                if command == "IndicationStatus":
+                    status = instr['Command' + str(command_idx)]['Opt']['String1']
+                    if status == "on":
+                        self.sound_status = "on"
+                    else:
+                        self.sound_status = "off"
+
+        if self._key is None:
+            frame = obs
+        else:
+            frame = obs[self._key]
+
+        if self._grayscale:
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        frame = cv2.resize(
+            frame, (self._width, self._height), interpolation=cv2.INTER_AREA
+        )
+        if self._grayscale:
+            frame = np.expand_dims(frame, -1)
+
+        if self._key is None:
+            obs = frame
+        else:
+            obs = obs.copy()
+            obs[self._key] = frame
+        return obs
+
+
 def make_atari(env_id, max_episode_steps=None):
     env = gym.make(env_id)
     assert 'NoFrameskip' in env.spec.id
@@ -272,9 +347,11 @@ def make_atari(env_id, max_episode_steps=None):
         env = TimeLimit(env, max_episode_steps=max_episode_steps)
     return env
 
-def make_dmlab(env_id, opt, max_episode_steps=None):
+def make_dmlab(env_id, opt, subrank=0, max_episode_steps=None):
     import gym_deepmindlab
     env = gym.make(env_id, width=opt.env.state_size[0], height=opt.env.state_size[1])
+    report_path = os.path.join(os.path.abspath('..'), 'rat_exp', 'a2c_dm_scratch', opt.output_path, 'reports')
+    env.set_report_path(report_path, subrank)
     env = NoopResetEnv(env, noop_max=30)
     env = MaxAndSkipEnv(env, skip=4)
     if max_episode_steps is not None:

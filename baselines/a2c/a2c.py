@@ -104,7 +104,6 @@ class Model(object):
             )
             return policy_loss, value_loss, policy_entropy
 
-
         self.train = train
         self.train_model = train_model
         self.step_model = step_model
@@ -199,18 +198,20 @@ def learn(
 
     # Instantiate the runner object
     runner = Runner(env, model, nsteps=nsteps, gamma=gamma)
-    epinfobuf = deque(maxlen=100)
+    epinfobuf = deque(maxlen=16)
 
     # Calculate the batch_size
     nbatch = nenvs*nsteps
 
     # Start total timer
     tstart = time.time()
+    total_reward = deque(maxlen=100)
 
     for update in range(1, total_timesteps//nbatch+1):
         # Get mini batch of experiences
         obs, states, rewards, masks, actions, values, epinfos = runner.run()
         epinfobuf.extend(epinfos)
+        total_reward.extend(rewards)
 
         policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
         nseconds = time.time()-tstart

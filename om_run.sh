@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -N 1
 #SBATCH -c 3
-#SBATCH --array=22
+#SBATCH --array=0-8
 #SBATCH --job-name=dqn
 #SBATCH --mem=40GB
 #SBATCH --gres=gpu:tesla-k80:1

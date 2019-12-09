@@ -2,6 +2,7 @@ import sys
 import re
 import multiprocessing
 import os.path as osp
+import gym
 from collections import defaultdict
 import tensorflow as tf
 import numpy as np
@@ -30,6 +31,26 @@ try:
 except ImportError:
     roboschool = None
 
+_game_envs = defaultdict(set)
+for env in gym.envs.registry.all():
+    # TODO: solve this with regexes
+    env_type = env.entry_point.split(':')[0].split('.')[-1]
+    _game_envs[env_type].add(env.id)
+
+# reading benchmark names directly from retro requires
+# importing retro here, and for some reason that crashes tensorflow
+# in ubuntu
+_game_envs['retro'] = {
+    'BubbleBobble-Nes',
+    'SuperMarioBros-Nes',
+    'TwinBee3PokoPokoDaimaou-Nes',
+    'SpaceHarrier-Nes',
+    'SonicTheHedgehog-Genesis',
+    'Vectorman-Genesis',
+    'FinalFight-Snes',
+    'SpaceInvaders-Snes',
+}
+
 
 def train(opt, env, id_path):
     env_type, env_id = get_env_type(opt)
@@ -38,8 +59,14 @@ def train(opt, env, id_path):
     total_timesteps = int(opt.hyper.num_timesteps)
     seed = opt.hyper.seed
 
-    learn = get_learn_function('a2c')
-    alg_kwargs = get_learn_function_defaults('a2c', env_type)
+    learn = get_learn_function('acer')
+    alg_kwargs = get_learn_function_defaults('acer', env_type)
+
+    # env = build_env(opt)
+    # if opt.hyper.save_video_interval != 0:
+    #     env = VecVideoRecorder(env, osp.join(logger.get_dir(), "videos"),
+    #                            record_video_trigger=lambda x: x % opt.hyper.save_video_interval == 0,
+    #                            video_length=opt.hyper.save_video_length)
 
     if opt.hyper.network:
         alg_kwargs['network'] = opt.hyper.network
@@ -47,7 +74,7 @@ def train(opt, env, id_path):
         if alg_kwargs.get('network') is None:
             alg_kwargs['network'] = get_default_network(env_type)
 
-    print('Training {} on {}:{} with arguments \n{}'.format('a2c', env_type, env_id, alg_kwargs))
+    print('Training {} on {}:{} with arguments \n{}'.format('acer', env_type, env_id, alg_kwargs))
 
     load_path = None
     if osp.isfile(id_path+'/save.pkl'):
@@ -56,15 +83,15 @@ def train(opt, env, id_path):
         env=env,
         seed=seed,
         nsteps=opt.hyper.nsteps,
-        lr=opt.hyper.learning_rate,
-        save_interval=opt.hyper.save_interval,
         total_timesteps=total_timesteps,
         load_path=load_path,
         save_path=id_path,
+        save_interval=opt.hyper.save_interval,
+        lr=opt.hyper.learning_rate,
         **alg_kwargs
     )
 
-    return model
+    return model  # , env
 
 
 def build_env(opt):
@@ -76,7 +103,7 @@ def build_env(opt):
     env_type, env_id = get_env_type(opt)
 
     frame_stack_size = 4
-    env = make_vec_env(env_id, env_type=env_type, num_env=nenv, seed=seed, gamestate=opt.hyper.gamestate,
+    env = make_vec_env(env_id, env_type='atari', num_env=nenv, seed=seed, gamestate=opt.hyper.gamestate,
                        reward_scale=opt.hyper.reward_scale)
     env = VecFrameStack(env, frame_stack_size)
 
@@ -84,8 +111,27 @@ def build_env(opt):
 
 
 def get_env_type(opt):
-    env_type = opt.env.type
+    env_type = 'atari'
     env_id = opt.env.name
+
+    # # Re-parse the gym registry, since we could have new envs since last time.
+    # for env in gym.envs.registry.all():
+    #     env_type = env.entry_point.split(':')[0].split('.')[-1]
+    #     _game_envs[env_type].add(env.id)  # This is a set so add is idempotent
+    #
+    # if env_id in _game_envs.keys():
+    #     env_type = env_id
+    #     env_id = [g for g in _game_envs[env_type]][0]
+    # else:
+    #     env_type = None
+    #     for g, e in _game_envs.items():
+    #         if env_id in e:
+    #             env_type = g
+    #             break
+    #     if ':' in env_id:
+    #         env_type = re.sub(r':.*', '', env_id)
+    #     assert env_type is not None, 'env_id {} is not recognized in env types'.format(env_id, _game_envs.keys())
+
     return env_type, env_id
 
 
@@ -162,12 +208,12 @@ def save_images(id_path, opt, model, env):
         obs, rew, done, _ = env.step(actions)
         episode_rew += rew[0] if isinstance(env, VecEnv) else rew
 
-        for rep in range(6):
+        for rep in range(4):
             img = Image.fromarray(obs[0, :, :, rep])
             img_path = os.path.join(id_path, 'images')
             if not os.path.exists(img_path):
                 os.mkdir(img_path)
-            img.save(img_path + '/ep_' + str(episode) + '_step_' + str(step) + '_' + str(rep) + '.jpg', 'JPEG')
+            img.save(img_path + '/ep_' + str(episode) + '_step_' + str(step) + '.jpg', 'JPEG')
 
         done = done.any() if isinstance(done, np.ndarray) else done
         if done:
@@ -177,36 +223,18 @@ def save_images(id_path, opt, model, env):
             obs = env.reset()
 
 
-def play(model, env):
-    logger.log("Running trained model")
-    obs = env.reset()
-
-    state = model.initial_state if hasattr(model, 'initial_state') else None
-    dones = np.zeros((1,))
-
-    episode_rew = np.zeros(env.num_envs) if isinstance(env, VecEnv) else np.zeros(1)
-    while True:
-        if state is not None:
-            actions, _, state, _ = model.step(obs,S=state, M=dones)
-        else:
-            actions, _, _, _ = model.step(obs)
-
-        obs, rew, done, _ = env.step(actions)
-        episode_rew += rew
-        env.render()
-        done_any = done.any() if isinstance(done, np.ndarray) else done
-        if done_any:
-            for i in np.nonzero(done)[0]:
-                print('episode_rew={}'.format(episode_rew[i]))
-                episode_rew[i] = 0
-
-
 def run(opt, id_path, env):
     # configure logger, disable logging in child MPI processes (with rank > 0)
 
+    # arg_parser = common_arg_parser()
+    # args, unknown_args = arg_parser.parse_known_args(args)
+    # extra_args = parse_cmdline_kwargs(unknown_args)
+
     if MPI is None or MPI.COMM_WORLD.Get_rank() == 0:
+        rank = 0
         configure_logger(id_path)
     else:
+        rank = MPI.COMM_WORLD.Get_rank()
         configure_logger(id_path, format_strs=[])
 
     model = train(opt, env, id_path)
@@ -215,6 +243,29 @@ def run(opt, id_path, env):
     model.save(save_path)
 
     save_images(id_path, opt, model, env)
+
+    if opt.hyper.play:
+        logger.log("Running trained model")
+        obs = env.reset()
+
+        state = model.initial_state if hasattr(model, 'initial_state') else None
+        dones = np.zeros((1,))
+
+        episode_rew = 0
+        while True:
+            if state is not None:
+                actions, _, state, _ = model.step(obs, S=state, M=dones)
+            else:
+                actions, _, _, _ = model.step(obs)
+
+            obs, rew, done, _ = env.step(actions)
+            episode_rew += rew[0] if isinstance(env, VecEnv) else rew
+            env.render()
+            done = done.any() if isinstance(done, np.ndarray) else done
+            if done:
+                print('episode_rew={}'.format(episode_rew))
+                episode_rew = 0
+                obs = env.reset()
 
     env.close()
 
