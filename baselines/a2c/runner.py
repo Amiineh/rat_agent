@@ -39,7 +39,7 @@ class Runner(AbstractEnvRunner):
             for info in infos:
                 maybeepinfo = info.get('episode')
                 if maybeepinfo:
-                    print(maybeepinfo)
+                    # print(maybeepinfo)
                     epinfos.append(maybeepinfo)
             self.states = states
             self.dones = dones

@@ -7,6 +7,8 @@ from baselines.common.vec_env import VecFrameStack
 from baselines.common.cmd_util import make_vec_env
 import sys
 from baselines import logger
+from runs.train import run
+import importlib
 
 
 parser = argparse.ArgumentParser()
@@ -23,50 +25,8 @@ output_path = {
     'om2': '/om2/user/amineh/rat_exp/',
     'vm': '/home/amineh/Shared/Mice/code/rat_exp/'}[FLAGS.host_filesystem]
 
-if FLAGS.agent == "priint":
-    from agents.priint import experiments
-    from agents.priint.train import run
-    output_path = output_path + "priint/"
-
-if FLAGS.agent == "random_gym":
-    from agents.random_gym import experiments
-    from agents.random_gym.train import run
-    output_path = output_path + "random_gym/"
-
-if FLAGS.agent == "dqn_gym":
-    from agents.dqn_gym import experiments
-    from agents.dqn_gym.train import run
-    output_path = output_path + "dqn_gym/"
-
-if FLAGS.agent == "dqn_dm":
-    from agents.dqn_dm import experiments
-    from agents.dqn_dm.train import run
-    output_path = output_path + "dqn_dm/"
-
-if FLAGS.agent == "a2c_gym":
-    from agents.a2c_gym import experiments
-    from agents.a2c_gym.train import run
-    output_path = output_path + "a2c_gym/"
-
-if FLAGS.agent == "a2c_dm":
-    from agents.a2c_dm import experiments
-    from agents.a2c_dm.train import run
-    output_path = output_path + "a2c_dm_scratch/"
-
-if FLAGS.agent == "acer_gym":
-    from agents.acer_gym import experiments
-    from agents.acer_gym.train import run
-    output_path = output_path + "acer_gym/"
-
-if FLAGS.agent == "acer_dm":
-    from agents.acer_dm import experiments
-    from agents.acer_dm.train import run
-    output_path = output_path + "acer_dm/"
-
-if FLAGS.agent == "acktr_gym":
-    from agents.acktr_gym import experiments
-    from agents.acktr_gym.train import run
-    output_path = output_path + "acktr_gym/"
+output_path = output_path + FLAGS.agent + "/"
+experiments = importlib.import_module("experiments." + FLAGS.agent)
 
 
 def generate_experiments(id):
@@ -76,7 +36,6 @@ def generate_experiments(id):
 
 
 def run_train(id):
-    from runs import train
     opt = experiments.get_experiment(output_path, id)
 
     def configure_logger(log_path, **kwargs):
@@ -105,16 +64,13 @@ def run_train(id):
         env = VecFrameStack(env, frame_stack_size)    # one channel for sound, one for distractor
         return env
 
-    if opt.agent == "a2c_gym" or opt.agent == "a2c_dm" \
-            or opt.agent == "acer_gym" or opt.agent == "acer_dm" \
-            or opt.agent == "acktr_gym" or opt.agent == "acktr_dm":
-        id_path = output_path + opt.output_path
-        env_type, env_id = get_env_type(opt)
-        print('env_type: {}'.format(env_type))
-        env = build_env(opt)
-        run(opt, id_path, env)
-    else:
-        train.run(opt, output_path, run)
+    id_path = output_path + opt.output_path
+    if not os.path.exists(id_path):
+        os.makedirs(id_path)
+    env_type, env_id = get_env_type(opt)
+    print('env_type: {}'.format(env_type))
+    env = build_env(opt)
+    run(opt, output_path, env)
 
 
 def find_id(id):
