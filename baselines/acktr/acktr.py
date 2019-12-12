@@ -94,7 +94,7 @@ class Model(object):
 
 def learn(network, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval=100, nprocs=32, nsteps=20,
                  ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0, lr=0.25, max_grad_norm=0.5,
-                 kfac_clip=0.001, save_interval=None, lrschedule='linear', load_path=None, is_async=True, **network_kwargs):
+                 kfac_clip=0.001, save_interval=None, lrschedule='linear', load_path=None, is_async=True, save_path=None, **network_kwargs):
     set_global_seeds(seed)
 
 
@@ -110,10 +110,10 @@ def learn(network, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interva
                                 =nsteps, ent_coef=ent_coef, vf_coef=vf_coef, vf_fisher_coef=
                                 vf_fisher_coef, lr=lr, max_grad_norm=max_grad_norm, kfac_clip=kfac_clip,
                                 lrschedule=lrschedule, is_async=is_async)
-    if save_interval and logger.get_dir():
-        import cloudpickle
-        with open(osp.join(logger.get_dir(), 'make_model.pkl'), 'wb') as fh:
-            fh.write(cloudpickle.dumps(make_model))
+    # if save_interval and logger.get_dir():
+    #     import cloudpickle
+    #     with open(osp.join(logger.get_dir(), 'make_model.pkl'), 'wb') as fh:
+    #         fh.write(cloudpickle.dumps(make_model))
     model = make_model()
 
     if load_path is not None:
@@ -150,9 +150,9 @@ def learn(network, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interva
             logger.dump_tabular()
 
         if save_interval and (update % save_interval == 0 or update == 1) and logger.get_dir():
-            savepath = osp.join(logger.get_dir(), 'checkpoint%.5i'%update)
-            print('Saving to', savepath)
-            model.save(savepath)
+            # savepath = osp.join(logger.get_dir(), 'checkpoint%.5i'%update)
+            print('Saving to', save_path)
+            model.save(save_path)
     coord.request_stop()
     coord.join(enqueue_threads)
     return model

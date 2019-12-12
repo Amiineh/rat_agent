@@ -58,6 +58,16 @@ if FLAGS.agent == "acer_gym":
     from agents.acer_gym.train import run
     output_path = output_path + "acer_gym/"
 
+if FLAGS.agent == "acer_dm":
+    from agents.acer_dm import experiments
+    from agents.acer_dm.train import run
+    output_path = output_path + "acer_dm/"
+
+if FLAGS.agent == "acktr_gym":
+    from agents.acktr_gym import experiments
+    from agents.acktr_gym.train import run
+    output_path = output_path + "acktr_gym/"
+
 
 def generate_experiments(id):
     # is is not used
@@ -92,10 +102,12 @@ def run_train(id):
         configure_logger(id_path)
         env = make_vec_env(env_id, env_type=env_type, num_env=nenv, seed=seed, gamestate=opt.hyper.gamestate,
                            reward_scale=opt.hyper.reward_scale, opt=opt)
-        env = VecFrameStack(env, frame_stack_size+2)    # one channel for sound, one for distractor
+        env = VecFrameStack(env, frame_stack_size)    # one channel for sound, one for distractor
         return env
 
-    if opt.agent == "a2c_gym" or opt.agent == "a2c_dm" or opt.agent == "acer_gym":
+    if opt.agent == "a2c_gym" or opt.agent == "a2c_dm" \
+            or opt.agent == "acer_gym" or opt.agent == "acer_dm" \
+            or opt.agent == "acktr_gym" or opt.agent == "acktr_dm":
         id_path = output_path + opt.output_path
         env_type, env_id = get_env_type(opt)
         print('env_type: {}'.format(env_type))

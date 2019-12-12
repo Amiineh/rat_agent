@@ -350,7 +350,7 @@ def make_atari(env_id, max_episode_steps=None):
 def make_dmlab(env_id, opt, subrank=0, max_episode_steps=None):
     import gym_deepmindlab
     env = gym.make(env_id, width=opt.env.state_size[0], height=opt.env.state_size[1])
-    report_path = os.path.join(os.path.abspath('..'), 'rat_exp', 'a2c_dm_scratch', opt.output_path, 'reports')
+    report_path = os.path.join(os.path.abspath('..'), 'rat_exp', opt.agent, opt.output_path, 'reports')
     env.set_report_path(report_path, subrank)
     env = NoopResetEnv(env, noop_max=30)
     env = MaxAndSkipEnv(env, skip=4)
