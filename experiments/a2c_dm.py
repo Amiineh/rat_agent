@@ -126,7 +126,7 @@ def generate_experiments(output_path):
                 idx_base += 1
 
     with open(info_path, 'w') as outfile:
-        json.dump(info, outfile)
+        json.dump(info, outfile, indent=4)
 
 
 def get_experiment(output_path, id):

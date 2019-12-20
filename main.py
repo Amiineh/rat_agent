@@ -61,7 +61,9 @@ def run_train(id):
         configure_logger(id_path)
         env = make_vec_env(env_id, env_type=env_type, num_env=nenv, seed=seed, gamestate=opt.hyper.gamestate,
                            reward_scale=opt.hyper.reward_scale, opt=opt)
-        env = VecFrameStack(env, frame_stack_size)    # one channel for sound, one for distractor
+        has_sound = "sound" in opt.env.name.lower()  # add channel for sound
+        frame_stack_size = frame_stack_size + 1 if has_sound else frame_stack_size
+        env = VecFrameStack(env, frame_stack_size, has_sound)
         return env
 
     id_path = output_path + opt.output_path

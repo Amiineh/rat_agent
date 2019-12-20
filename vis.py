@@ -2,8 +2,8 @@ from baselines.common import plot_util as pu
 import matplotlib.pyplot as plt
 import numpy as np
 
-for i in range(23):
-    results = pu.load_results('/Users/amineh.ahm/Desktop/Mice/code/rat_exp/a2c_gym 4/train_' + str(i))
+for i in range(5):
+    results = pu.load_results('/Users/amineh.ahm/Desktop/Mice/code/rat_exp/acktr_dm 2/train_' + str(i))
     r = results[0]
 
     # plt.plot(np.cumsum(r.monitor.l), r.monitor.r)

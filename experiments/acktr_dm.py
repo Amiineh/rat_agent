@@ -108,10 +108,10 @@ def generate_experiments(output_path):
         idx_base = 0
 
     for env_id in ['DeepmindLabSoundTaskZero-v0', 'DeepmindLabSoundTaskOne-v0', 'DeepmindLabSoundTaskTwo-v0']:
-        for network in ['cnn']: #, 'cnn_lstm', 'cnn_lnlstm']:
-            for lr in [0.01, 0.001, 0.0001, 0.00001]:
+        for network in ['cnn']:
+            for lr in [0.1, 0.01, 0.001, 0.0001]:
                 hyper = Hyperparameters(learning_rate=lr, network=network)
-                exp = Experiment(id=idx_base, agent='acer_dm', env_id=env_id, output_path='train_' + str(idx_base),
+                exp = Experiment(id=idx_base, agent='acktr_dm', env_id=env_id, output_path='train_' + str(idx_base),
                                  hyper=hyper)
 
                 idx = exp_exists(exp, info)
