@@ -8,6 +8,8 @@ class Hyperparameters(object):
                  learning_rate=0.0001,  # Q-network learning rate
                  nsteps=5,  # n-step updating
                  num_env=16,  # number of parallel agents (cpus)
+                 replay_ratio=4,
+                 replay_start=10000,
                  gamestate=None,
                  reward_scale=1.0,
                  num_timesteps=6e7,
@@ -21,6 +23,8 @@ class Hyperparameters(object):
         self.learning_rate = learning_rate
         self.nsteps = nsteps
         self.num_env = num_env
+        self.replay_ratio = replay_ratio
+        self.replay_start = replay_start
         self.gamestate = gamestate
         self.reward_scale = reward_scale
         self.num_timesteps = num_timesteps
@@ -107,9 +111,9 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for env_id in ['DeepmindLabSoundTaskZero-v0', 'DeepmindLabSoundTaskOne-v0', 'DeepmindLabSoundTaskTwo-v0']:
+    for env_id in ['DeepmindLabNosePokeZero-v0', 'DeepmindLabNosePokeOne-v0', 'DeepmindLabNosePokeTwo-v0']:
         for network in ['cnn']: #, 'cnn_lstm', 'cnn_lnlstm']:
-            for lr in [0.01, 0.001, 0.0001, 0.00001]:
+            for lr in [0.01, 0.001, 0.0001]:
                 hyper = Hyperparameters(learning_rate=lr, network=network)
                 exp = Experiment(id=idx_base, agent='acer_dm', env_id=env_id, output_path='train_' + str(idx_base),
                                  hyper=hyper)

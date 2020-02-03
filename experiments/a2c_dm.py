@@ -33,7 +33,7 @@ class Hyperparameters(object):
 
 class Environment(object):
 # todo: check action size
-    def __init__(self, name='DeepmindLabSoundTaskZero-v0', state_size=None, action_size=6, type='dmlab', fps=60):
+    def __init__(self, name='DeepmindLabNosePokeZero-v0', state_size=None, action_size=6, type='dmlab', fps=60):
         if state_size is None:
             state_size = [84, 84, 4]
         self.name = name
@@ -108,8 +108,8 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for env_id in ['DeepmindLabMemoryTaskZero-v0']:
-        for network in ['cnn', 'cnn_lstm', 'cnn_lnlstm']:
+    for env_id in ['DeepmindLabNosePokeZero-v0', 'DeepmindLabNosePokeOne-v0', 'DeepmindLabNosePokeTwo-v0']:
+        for network in ['cnn']:#, 'cnn_lstm', 'cnn_lnlstm']:
             for lr in [0.01, 0.001, 0.0001]:#, 0.00001, 0.000001]:
                 hyper = Hyperparameters(learning_rate=lr, network=network)
                 exp = Experiment(id=idx_base, agent='a2c_dm', env_id=env_id, output_path='train_' + str(idx_base),

@@ -80,19 +80,34 @@ def train(opt, env, id_path):
     print('Training {} on {}:{} with arguments \n{}'.format(agent, env_type, env_id, alg_kwargs))
 
     load_path = None
-    if osp.isfile(id_path+'/save.pkl'):
+    if osp.isfile(id_path + '/save.pkl'):
         load_path = id_path
-    model = learn(
-        env=env,
-        seed=seed,
-        nsteps=opt.hyper.nsteps,
-        total_timesteps=total_timesteps,
-        load_path=load_path,
-        save_path=id_path,
-        save_interval=opt.hyper.save_interval,
-        lr=opt.hyper.learning_rate,
-        **alg_kwargs
-    )
+    try:
+        model = learn(
+            env=env,
+            seed=seed,
+            nsteps=opt.hyper.nsteps,
+            total_timesteps=total_timesteps,
+            load_path=load_path,
+            save_path=id_path,
+            save_interval=opt.hyper.save_interval,
+            lr=opt.hyper.learning_rate,
+            replay_ratio=opt.hyper.replay_ratio,
+            replay_start=opt.hyper.replay_start,
+            **alg_kwargs
+        )
+    except:
+        model = learn(
+            env=env,
+            seed=seed,
+            nsteps=opt.hyper.nsteps,
+            total_timesteps=total_timesteps,
+            load_path=load_path,
+            save_path=id_path,
+            save_interval=opt.hyper.save_interval,
+            lr=opt.hyper.learning_rate,
+            **alg_kwargs
+        )
 
     return model  # , env
 
@@ -211,7 +226,7 @@ def save_images(id_path, opt, model, env):
         obs, rew, done, _ = env.step(actions)
         episode_rew += rew[0] if isinstance(env, VecEnv) else rew
 
-        for rep in range(4):
+        for rep in range(5):
             img = Image.fromarray(obs[0, :, :, rep])
             img_path = os.path.join(id_path, 'images')
             if not os.path.exists(img_path):
@@ -287,5 +302,3 @@ def run(opt, output_path, env):
         json.dump(info, outfile)
 
     return model
-
-

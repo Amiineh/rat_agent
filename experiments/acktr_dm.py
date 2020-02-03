@@ -107,9 +107,9 @@ def generate_experiments(output_path):
     else:
         idx_base = 0
 
-    for env_id in ['DeepmindLabSoundTaskZero-v0', 'DeepmindLabSoundTaskOne-v0', 'DeepmindLabSoundTaskTwo-v0']:
+    for env_id in ['DeepmindLabNosePokeZero-v0', 'DeepmindLabNosePokeOne-v0', 'DeepmindLabNosePokeTwo-v0']:
         for network in ['cnn']:
-            for lr in [0.1, 0.01, 0.001, 0.0001]:
+            for lr in [0.1, 0.01, 0.001]:
                 hyper = Hyperparameters(learning_rate=lr, network=network)
                 exp = Experiment(id=idx_base, agent='acktr_dm', env_id=env_id, output_path='train_' + str(idx_base),
                                  hyper=hyper)
