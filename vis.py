@@ -2,7 +2,7 @@ from baselines.common import plot_util as pu
 import matplotlib.pyplot as plt
 import numpy as np
 
-for i in range(7,8):
+for i in range(3, 10):
 # i = 4
     results = pu.load_results('/Users/amineh.ahm/Desktop/Mice/code/rat_exp/a2c_np_shaping/train_' + str(i))
     r = results[0]

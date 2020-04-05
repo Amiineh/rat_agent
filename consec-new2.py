@@ -29,12 +29,12 @@ sns.set_context("poster")
 # In[2]:
 
 
-main_path = '/Users/amineh.ahm/Desktop/Mice/code/rat_exp/acktr_dm_shaping/'
+main_path = '/Users/amineh.ahm/Desktop/Mice/code/rat_exp/acer_np_shaping/'
 name = 'rat1_2019-02-04_09_52_53.csv'
 num_rats = 16
 
 shape = 1
-rat = 6
+rat = 5
 
 possible_events_s1 = ['in_base', 'reward_time_started', 'not_in_base', 'rat_left_base_during_reward_time',
                       'correct_trial', 'correct_or_late', 'left_early', 'already_in_base', 'missed_trial', 'error']
